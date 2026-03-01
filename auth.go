@@ -43,7 +43,7 @@ func Register(baseURL, email, password string, opts ...RegisterOption) (*AuthReg
 	}
 
 	var result AuthRegisterResponse
-	if err := authPost(baseURL, "/auth/register", req, &result); err != nil {
+	if err := authPost(baseURL, "/v1/auth/register", req, &result); err != nil {
 		return nil, err
 	}
 	return &result, nil
@@ -62,7 +62,7 @@ func Login(baseURL, email, password string) (*AuthLoginResponse, error) {
 	}
 
 	var result AuthLoginResponse
-	if err := authPost(baseURL, "/auth/login", req, &result); err != nil {
+	if err := authPost(baseURL, "/v1/auth/login", req, &result); err != nil {
 		return nil, err
 	}
 	return &result, nil
@@ -91,7 +91,7 @@ func authPost(baseURL, path string, body interface{}, result interface{}) error 
 	}
 	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(io.LimitReader(resp.Body, 10<<20))
 	if err != nil {
 		return fmt.Errorf("elydora: read response body: %w", err)
 	}

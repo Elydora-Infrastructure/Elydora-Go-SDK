@@ -2,6 +2,10 @@ package elydora
 
 import "fmt"
 
+// GenesisChainHash is the initial chain hash for an agent's first operation.
+// It is the base64url encoding of 32 zero bytes, matching the backend.
+const GenesisChainHash = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+
 // CreateOperation builds a signed EOR from the given parameters.
 // It generates a UUIDv7 operation ID, a nonce, computes the payload hash and chain hash,
 // and signs the entire record with the client's private key.
@@ -29,7 +33,7 @@ func (c *Client) CreateOperation(params *CreateOperationParams) (*EOR, error) {
 
 	prevChainHash := params.PrevChainHash
 	if prevChainHash == "" {
-		prevChainHash = "GENESIS"
+		prevChainHash = GenesisChainHash
 	}
 
 	kid := params.KID
@@ -66,7 +70,7 @@ func (c *Client) CreateOperation(params *CreateOperationParams) (*EOR, error) {
 // SubmitOperation submits a signed EOR to the Elydora API.
 func (c *Client) SubmitOperation(eor *EOR) (*SubmitOperationResponse, error) {
 	var result SubmitOperationResponse
-	if err := c.doPost("/operations", eor, &result); err != nil {
+	if err := c.doPost("/v1/operations", eor, &result); err != nil {
 		return nil, err
 	}
 	return &result, nil
@@ -75,7 +79,7 @@ func (c *Client) SubmitOperation(eor *EOR) (*SubmitOperationResponse, error) {
 // GetOperation retrieves an operation by ID.
 func (c *Client) GetOperation(operationID string) (*GetOperationResponse, error) {
 	var result GetOperationResponse
-	if err := c.doGet(fmt.Sprintf("/operations/%s", operationID), &result); err != nil {
+	if err := c.doGet(fmt.Sprintf("/v1/operations/%s", operationID), &result); err != nil {
 		return nil, err
 	}
 	return &result, nil
@@ -84,7 +88,7 @@ func (c *Client) GetOperation(operationID string) (*GetOperationResponse, error)
 // VerifyOperation verifies the integrity of an operation.
 func (c *Client) VerifyOperation(operationID string) (*VerifyOperationResponse, error) {
 	var result VerifyOperationResponse
-	if err := c.doGet(fmt.Sprintf("/operations/%s/verify", operationID), &result); err != nil {
+	if err := c.doPost(fmt.Sprintf("/v1/operations/%s/verify", operationID), nil, &result); err != nil {
 		return nil, err
 	}
 	return &result, nil

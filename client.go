@@ -116,7 +116,7 @@ func (c *Client) doRequest(method, path string, body interface{}, result interfa
 			continue
 		}
 
-		respBody, err := io.ReadAll(resp.Body)
+		respBody, err := io.ReadAll(io.LimitReader(resp.Body, 10<<20))
 		resp.Body.Close()
 		if err != nil {
 			lastErr = fmt.Errorf("elydora: read response body: %w", err)
@@ -172,7 +172,7 @@ func (c *Client) doPost(path string, body interface{}, result interface{}) error
 	return c.doRequest(http.MethodPost, path, body, result)
 }
 
-// doPut performs a PUT request.
-func (c *Client) doPut(path string, body interface{}, result interface{}) error {
-	return c.doRequest(http.MethodPut, path, body, result)
+// SetToken sets the JWT token used for authenticated API requests.
+func (c *Client) SetToken(token string) {
+	c.token = token
 }

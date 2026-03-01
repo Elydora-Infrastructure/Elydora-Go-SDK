@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/elydora/sdk-go/cmd/elydora/plugins"
+	"github.com/Elydora-Infrastructure/Elydora-Go-SDK/cmd/elydora/plugins"
 )
 
 const version = "1.0.0"

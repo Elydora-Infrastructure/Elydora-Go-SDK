@@ -1,3 +1,3 @@
-module github.com/elydora/sdk-go
+module github.com/Elydora-Infrastructure/Elydora-Go-SDK
 
 go 1.21

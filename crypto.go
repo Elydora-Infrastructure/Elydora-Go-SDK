@@ -32,13 +32,6 @@ func computePayloadHash(payload interface{}) (string, error) {
 	return sha256BytesBase64url([]byte(canonical)), nil
 }
 
-// computeChainHash computes the chain hash for an operation.
-// Formula: SHA-256(prev_chain_hash + "|" + payload_hash + "|" + operation_id + "|" + issued_at)
-func computeChainHash(prevChainHash, payloadHash, operationID string, issuedAt int64) string {
-	input := prevChainHash + "|" + payloadHash + "|" + operationID + "|" + fmt.Sprintf("%d", issuedAt)
-	return sha256Base64url(input)
-}
-
 // signEd25519 signs data with an Ed25519 private key seed (base64url-encoded 32 bytes).
 // Returns the signature as base64url.
 func signEd25519(privateKeyBase64url string, data []byte) (string, error) {
@@ -52,37 +45,6 @@ func signEd25519(privateKeyBase64url string, data []byte) (string, error) {
 	key := ed25519.NewKeyFromSeed(seed)
 	sig := ed25519.Sign(key, data)
 	return base64urlEncode(sig), nil
-}
-
-// verifyEd25519 verifies an Ed25519 signature.
-func verifyEd25519(publicKeyBase64url string, signatureBase64url string, data []byte) (bool, error) {
-	pubBytes, err := base64urlDecode(publicKeyBase64url)
-	if err != nil {
-		return false, fmt.Errorf("decode public key: %w", err)
-	}
-	if len(pubBytes) != ed25519.PublicKeySize {
-		return false, fmt.Errorf("public key must be %d bytes, got %d", ed25519.PublicKeySize, len(pubBytes))
-	}
-	sigBytes, err := base64urlDecode(signatureBase64url)
-	if err != nil {
-		return false, fmt.Errorf("decode signature: %w", err)
-	}
-	return ed25519.Verify(ed25519.PublicKey(pubBytes), data, sigBytes), nil
-}
-
-// derivePublicKey derives the Ed25519 public key from a private key seed (base64url).
-// Returns the public key as base64url.
-func derivePublicKey(privateKeyBase64url string) (string, error) {
-	seed, err := base64urlDecode(privateKeyBase64url)
-	if err != nil {
-		return "", fmt.Errorf("decode private key: %w", err)
-	}
-	if len(seed) != ed25519.SeedSize {
-		return "", fmt.Errorf("private key seed must be %d bytes, got %d", ed25519.SeedSize, len(seed))
-	}
-	key := ed25519.NewKeyFromSeed(seed)
-	pub := key.Public().(ed25519.PublicKey)
-	return base64urlEncode(pub), nil
 }
 
 // ---------------------------------------------------------------------------
