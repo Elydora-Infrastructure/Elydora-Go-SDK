@@ -122,3 +122,21 @@ func authPost(baseURL, path string, body interface{}, result interface{}) error 
 		Message:    string(respBody),
 	}
 }
+
+// GetMe retrieves the current authenticated user's profile.
+func (c *Client) GetMe() (*GetMeResponse, error) {
+	var result GetMeResponse
+	if err := c.doGet("/v1/auth/me", &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// IssueApiToken creates a new API token with an optional TTL.
+func (c *Client) IssueApiToken(req *IssueApiTokenRequest) (*IssueApiTokenResponse, error) {
+	var result IssueApiTokenResponse
+	if err := c.doPost("/v1/auth/token", req, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}

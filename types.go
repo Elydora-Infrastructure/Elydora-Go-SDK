@@ -230,6 +230,38 @@ type RevokeAgentRequest struct {
 	Reason string `json:"reason"`
 }
 
+type UnfreezeAgentRequest struct {
+	Reason string `json:"reason"`
+}
+
+type ListAgentsResponse struct {
+	Agents []Agent `json:"agents"`
+}
+
+type DeleteAgentResponse struct {
+	Deleted bool `json:"deleted"`
+}
+
+type GetMeResponse struct {
+	User User `json:"user"`
+}
+
+type IssueApiTokenRequest struct {
+	TTLSeconds *int `json:"ttl_seconds"`
+}
+
+type IssueApiTokenResponse struct {
+	Token     string `json:"token"`
+	ExpiresAt *int64 `json:"expires_at"`
+}
+
+type HealthResponse struct {
+	Status          string `json:"status"`
+	Version         string `json:"version"`
+	ProtocolVersion string `json:"protocol_version"`
+	Timestamp       int64  `json:"timestamp"`
+}
+
 type SubmitOperationResponse struct {
 	Receipt EAR `json:"receipt"`
 }

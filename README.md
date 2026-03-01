@@ -110,6 +110,13 @@ client, err := elydora.NewClient(&elydora.Config{
 })
 ```
 
+### Client Methods
+
+```go
+// Update the JWT token at runtime
+client.SetToken("new-jwt-token")
+```
+
 ### Authentication
 
 ```go
@@ -121,6 +128,14 @@ reg, err := elydora.Register(baseURL, email, password,
 
 // Login and receive a JWT
 auth, err := elydora.Login(baseURL, email, password)
+
+// Get current authenticated user profile
+me, err := client.GetMe()
+
+// Issue a new API token (with optional TTL)
+tokenResp, err := client.IssueApiToken(&elydora.IssueApiTokenRequest{
+	TTLSeconds: &ttlSeconds,
+})
 ```
 
 ### Operations
@@ -153,7 +168,7 @@ agent, err := client.RegisterAgent(&elydora.RegisterAgentRequest{
 	AgentID:           "my-agent",
 	DisplayName:       "My Agent",
 	ResponsibleEntity: "team@example.com",
-	Keys: []elydora.AgentKeyRequest{
+	Keys: []elydora.RegisterAgentKeyInput{
 		{KID: "key-v1", PublicKey: "<base64url>", Algorithm: "ed25519"},
 	},
 })
@@ -166,6 +181,15 @@ err := client.FreezeAgent(agentID, "security review")
 
 // Revoke a key
 err := client.RevokeKey(agentID, kid, "key rotation")
+
+// List all agents in the organization
+agents, err := client.ListAgents()
+
+// Unfreeze a previously frozen agent
+err := client.UnfreezeAgent(agentID, "review complete")
+
+// Delete an agent permanently
+deleted, err := client.DeleteAgent(agentID)
 ```
 
 ### Audit
@@ -198,6 +222,9 @@ export, err := client.CreateExport(&elydora.CreateExportRequest{
 
 exports, err := client.ListExports()
 detail, err := client.GetExport(exportID)
+
+// Download export file data
+data, err := client.DownloadExport(exportID)
 ```
 
 ### JWKS
@@ -205,6 +232,32 @@ detail, err := client.GetExport(exportID)
 ```go
 jwks, err := client.GetJWKS()
 ```
+
+### Health
+
+```go
+// Check API health (no authentication required, does not need a client)
+health, err := elydora.Health("https://api.elydora.com")
+// health.Status, health.Version, health.ProtocolVersion, health.Timestamp
+```
+
+### Constants
+
+```go
+// Genesis chain hash — initial prev_chain_hash for an agent's first operation
+elydora.GenesisChainHash // "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+```
+
+#### Status Enums
+
+| Type | Constants |
+|------|-----------|
+| `AgentStatus` | `AgentStatusActive`, `AgentStatusFrozen`, `AgentStatusRevoked` |
+| `KeyStatus` | `KeyStatusActive`, `KeyStatusRetired`, `KeyStatusRevoked` |
+| `ExportStatus` | `ExportStatusQueued`, `ExportStatusRunning`, `ExportStatusDone`, `ExportStatusFailed` |
+| `ExportFormat` | `ExportFormatJSON`, `ExportFormatPDF` |
+| `RbacRole` | `RbacRoleOrgOwner`, `RbacRoleSecurityAdmin`, `RbacRoleComplianceAuditor`, `RbacRoleReadonlyInvestigator`, `RbacRoleIntegrationEngineer` |
+| `ErrorCode` | `ErrorCodeInvalidSignature`, `ErrorCodeUnknownAgent`, `ErrorCodeKeyRevoked`, `ErrorCodeAgentFrozen`, `ErrorCodeTTLExpired`, `ErrorCodeReplayDetected`, `ErrorCodePrevHashMismatch`, `ErrorCodePayloadTooLarge`, `ErrorCodeRateLimited`, `ErrorCodeInternalError`, `ErrorCodeUnauthorized`, `ErrorCodeForbidden`, `ErrorCodeNotFound`, `ErrorCodeValidationError` |
 
 ## Error Handling
 
