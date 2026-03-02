@@ -7,7 +7,7 @@ import (
 )
 
 // GenerateHookScript writes a self-contained Node.js hook script to disk.
-// The script reads config/key from ~/.elydora/agents/ at runtime, persists
+// The script reads config/key from ~/.elydora/<agentId>/ at runtime, persists
 // chain state, and performs fire-and-forget EOR submission with inline Ed25519 crypto.
 // It always exits 0 so it never blocks the host agent.
 func GenerateHookScript(destPath string, config InstallConfig) error {
@@ -21,7 +21,7 @@ func GenerateHookScript(destPath string, config InstallConfig) error {
 		return fmt.Errorf("write agent config: %w", err)
 	}
 
-	script := buildHookScript(config.AgentName)
+	script := buildHookScript(config.AgentName, config.AgentID)
 	if err := os.WriteFile(destPath, []byte(script), 0755); err != nil {
 		return fmt.Errorf("write hook script: %w", err)
 	}
@@ -29,16 +29,16 @@ func GenerateHookScript(destPath string, config InstallConfig) error {
 }
 
 // writeAgentConfig persists the agent configuration and private key to
-// ~/.elydora/agents/<name>.json and ~/.elydora/agents/<name>.key so that
+// ~/.elydora/<agentId>/config.json and ~/.elydora/<agentId>/private.key so that
 // the generated hook script can read them at runtime without embedding secrets.
 func writeAgentConfig(config InstallConfig) error {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return fmt.Errorf("resolve home directory: %w", err)
 	}
-	agentsDir := filepath.Join(home, ".elydora", "agents")
-	if err := os.MkdirAll(agentsDir, 0755); err != nil {
-		return fmt.Errorf("create agents directory: %w", err)
+	agentDir := filepath.Join(home, ".elydora", config.AgentID)
+	if err := os.MkdirAll(agentDir, 0755); err != nil {
+		return fmt.Errorf("create agent directory: %w", err)
 	}
 
 	baseURL := config.BaseURL
@@ -51,16 +51,19 @@ func writeAgentConfig(config InstallConfig) error {
   "agent_id": %q,
   "kid": %q,
   "base_url": %q,
-  "token": %q
+  "token": %q,
+  "agent_name": %q
 }
-`, config.OrgID, config.AgentID, config.KID, baseURL, config.Token)
+`, config.OrgID, config.AgentID, config.KID, baseURL, config.Token, config.AgentName)
 
-	configPath := filepath.Join(agentsDir, config.AgentName+".json")
+	configPath := filepath.Join(agentDir, "config.json")
+	// Note: 0600 permissions are a no-op on Windows; Go's os.Chmod only handles the read-only bit on Windows.
 	if err := os.WriteFile(configPath, []byte(configJSON), 0600); err != nil {
 		return fmt.Errorf("write agent config: %w", err)
 	}
 
-	keyPath := filepath.Join(agentsDir, config.AgentName+".key")
+	keyPath := filepath.Join(agentDir, "private.key")
+	// Note: 0600 permissions are a no-op on Windows; Go's os.Chmod only handles the read-only bit on Windows.
 	if err := os.WriteFile(keyPath, []byte(config.PrivateKey+"\n"), 0600); err != nil {
 		return fmt.Errorf("write agent key: %w", err)
 	}
@@ -72,7 +75,7 @@ func writeAgentConfig(config InstallConfig) error {
 // whether the agent is frozen and blocks tool execution if so.
 // It caches the agent status locally (60s TTL) to avoid hitting the API on every
 // tool call, and fails open if the API is unreachable or config is missing.
-func GenerateGuardScript(agentName string) string {
+func GenerateGuardScript(agentName string, agentId string) string {
 	return fmt.Sprintf(`#!/usr/bin/env node
 'use strict';
 
@@ -86,9 +89,10 @@ const path = require('node:path');
 const os = require('node:os');
 
 const AGENT_NAME = %q;
+const AGENT_ID = %q;
 const ELYDORA_DIR = path.join(os.homedir(), '.elydora');
-const CONFIG_PATH = path.join(ELYDORA_DIR, 'agents', AGENT_NAME + '.json');
-const STATUS_CACHE_PATH = path.join(ELYDORA_DIR, 'agents', AGENT_NAME + '.status.json');
+const CONFIG_PATH = path.join(ELYDORA_DIR, AGENT_ID, 'config.json');
+const STATUS_CACHE_PATH = path.join(ELYDORA_DIR, AGENT_ID, 'status-cache.json');
 const CACHE_TTL_MS = 60000; // 60 seconds
 
 // Consume stdin so the parent process doesn't block on a full pipe
@@ -166,10 +170,10 @@ async function main() {
 }
 
 main();
-`, agentName, agentName)
+`, agentName, agentName, agentId)
 }
 
-func buildHookScript(agentName string) string {
+func buildHookScript(agentName string, agentId string) string {
 	return fmt.Sprintf(`#!/usr/bin/env node
 'use strict';
 
@@ -184,11 +188,12 @@ const path = require('node:path');
 const os = require('node:os');
 
 const AGENT_NAME = %q;
+const AGENT_ID = %q;
 const ELYDORA_DIR = path.join(os.homedir(), '.elydora');
-const CONFIG_PATH = path.join(ELYDORA_DIR, 'agents', AGENT_NAME + '.json');
-const KEY_PATH = path.join(ELYDORA_DIR, 'agents', AGENT_NAME + '.key');
-const CHAIN_STATE_PATH = path.join(ELYDORA_DIR, 'chain-state.json');
-const ERROR_LOG_PATH = path.join(ELYDORA_DIR, 'error.log');
+const CONFIG_PATH = path.join(ELYDORA_DIR, AGENT_ID, 'config.json');
+const KEY_PATH = path.join(ELYDORA_DIR, AGENT_ID, 'private.key');
+const CHAIN_STATE_PATH = path.join(ELYDORA_DIR, AGENT_ID, 'chain-state.json');
+const ERROR_LOG_PATH = path.join(ELYDORA_DIR, AGENT_ID, 'error.log');
 
 // ---------------------------------------------------------------------------
 // Embedded crypto (from @elydora/sdk src/crypto.ts + src/utils.ts)
@@ -461,5 +466,5 @@ async function main() {
 }
 
 main();
-`, agentName, agentName)
+`, agentName, agentName, agentId)
 }

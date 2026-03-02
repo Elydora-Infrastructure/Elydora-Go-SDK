@@ -3,6 +3,7 @@ package plugins
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -11,7 +12,7 @@ import (
 type ClaudeCodePlugin struct{}
 
 func (p *ClaudeCodePlugin) Install(config InstallConfig) error {
-	scriptPath, err := hookScriptPath("claudecode")
+	scriptPath, err := hookScriptPath(config.AgentID)
 	if err != nil {
 		return err
 	}
@@ -25,7 +26,7 @@ func (p *ClaudeCodePlugin) Install(config InstallConfig) error {
 
 	guardPath := config.GuardScriptPath
 	if guardPath == "" {
-		guardPath, err = guardScriptPath("claudecode")
+		guardPath, err = guardScriptPath(config.AgentID)
 		if err != nil {
 			return err
 		}
@@ -35,7 +36,7 @@ func (p *ClaudeCodePlugin) Install(config InstallConfig) error {
 	if err != nil {
 		return err
 	}
-	configPath := configDir + "/settings.json"
+	configPath := filepath.Join(configDir, "settings.json")
 
 	settings, err := readJSONFile(configPath)
 	if err != nil {
@@ -100,12 +101,12 @@ func (p *ClaudeCodePlugin) Install(config InstallConfig) error {
 	return nil
 }
 
-func (p *ClaudeCodePlugin) Uninstall() error {
+func (p *ClaudeCodePlugin) Uninstall(agentID string) error {
 	configDir, err := expandHome("~/.claude")
 	if err != nil {
 		return err
 	}
-	configPath := configDir + "/settings.json"
+	configPath := filepath.Join(configDir, "settings.json")
 
 	settings, err := readJSONFile(configPath)
 	if err != nil {
@@ -162,29 +163,26 @@ func (p *ClaudeCodePlugin) Uninstall() error {
 		return err
 	}
 
-	scriptPath, _ := hookScriptPath("claudecode")
-	if scriptPath != "" {
-		os.Remove(scriptPath)
-	}
-	gPath, _ := guardScriptPath("claudecode")
-	if gPath != "" {
-		os.Remove(gPath)
+	if agentID != "" {
+		scriptPath, _ := hookScriptPath(agentID)
+		if scriptPath != "" {
+			os.Remove(scriptPath)
+		}
+		gPath, _ := guardScriptPath(agentID)
+		if gPath != "" {
+			os.Remove(gPath)
+		}
 	}
 	fmt.Println("Uninstalled Elydora hook for Claude Code.")
 	return nil
 }
 
 func (p *ClaudeCodePlugin) Status() (PluginStatus, error) {
-	scriptPath, err := hookScriptPath("claudecode")
-	if err != nil {
-		return PluginStatus{}, err
-	}
-
 	configDir, err := expandHome("~/.claude")
 	if err != nil {
 		return PluginStatus{}, err
 	}
-	configPath := configDir + "/settings.json"
+	configPath := filepath.Join(configDir, "settings.json")
 
 	status := PluginStatus{
 		AgentName:   "claudecode",
@@ -192,12 +190,7 @@ func (p *ClaudeCodePlugin) Status() (PluginStatus, error) {
 		ConfigPath:  configPath,
 	}
 
-	// Check if hook script exists
-	if _, err := os.Stat(scriptPath); err == nil {
-		status.HookScriptExists = true
-	}
-
-	// Check if hook is configured in settings
+	// Check if hook is configured in settings and extract hook script path
 	settings, err := readJSONFile(configPath)
 	if err != nil {
 		return status, nil
@@ -208,10 +201,51 @@ func (p *ClaudeCodePlugin) Status() (PluginStatus, error) {
 		preConfigured := hasElydoraEntry(hooks["PreToolUse"])
 		postConfigured := hasElydoraEntry(hooks["PostToolUse"])
 		status.HookConfigured = preConfigured && postConfigured
+
+		// Extract hook script path from the configured command
+		scriptPath := extractElydoraScriptPath(hooks["PostToolUse"])
+		if scriptPath != "" {
+			if _, err := os.Stat(scriptPath); err == nil {
+				status.HookScriptExists = true
+			}
+		}
 	}
 
 	status.Installed = status.HookConfigured && status.HookScriptExists
 	return status, nil
+}
+
+// extractElydoraScriptPath extracts the script path from a hook array's Elydora command entry.
+func extractElydoraScriptPath(hookArray interface{}) string {
+	arr, _ := hookArray.([]interface{})
+	for _, entry := range arr {
+		if m, ok := entry.(map[string]interface{}); ok {
+			// New format: { "hooks": [{ "type": "command", "command": "node /path/to/hook.js" }] }
+			if innerHooks, ok := m["hooks"].([]interface{}); ok {
+				for _, h := range innerHooks {
+					if hm, ok := h.(map[string]interface{}); ok {
+						if cmd, _ := hm["command"].(string); strings.Contains(cmd, "elydora") {
+							return extractPathFromNodeCommand(cmd)
+						}
+					}
+				}
+			}
+			// Old format: { "command": "node /path/to/hook.js" }
+			if cmd, _ := m["command"].(string); strings.Contains(cmd, "elydora") {
+				return extractPathFromNodeCommand(cmd)
+			}
+		}
+	}
+	return ""
+}
+
+// extractPathFromNodeCommand extracts the file path from a "node /path/to/script.js" command.
+func extractPathFromNodeCommand(cmd string) string {
+	cmd = strings.TrimSpace(cmd)
+	if strings.HasPrefix(cmd, "node ") {
+		return strings.TrimSpace(cmd[5:])
+	}
+	return ""
 }
 
 // hasElydoraEntry checks if a hook array (interface{}) contains an Elydora entry.

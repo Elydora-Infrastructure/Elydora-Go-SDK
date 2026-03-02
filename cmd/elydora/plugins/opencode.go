@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // OpenCodePlugin manages the Elydora audit hook for OpenCode.
@@ -19,7 +20,7 @@ func (p *OpenCodePlugin) configPath() (string, error) {
 }
 
 func (p *OpenCodePlugin) Install(config InstallConfig) error {
-	scriptPath, err := hookScriptPath("opencode")
+	scriptPath, err := hookScriptPath(config.AgentID)
 	if err != nil {
 		return err
 	}
@@ -33,7 +34,7 @@ func (p *OpenCodePlugin) Install(config InstallConfig) error {
 
 	guardPath := config.GuardScriptPath
 	if guardPath == "" {
-		guardPath, err = guardScriptPath("opencode")
+		guardPath, err = guardScriptPath(config.AgentID)
 		if err != nil {
 			return err
 		}
@@ -109,7 +110,7 @@ module.exports = {
 `, guardPath, scriptPath)
 }
 
-func (p *OpenCodePlugin) Uninstall() error {
+func (p *OpenCodePlugin) Uninstall(agentID string) error {
 	pluginFile, err := p.configPath()
 	if err != nil {
 		return err
@@ -118,13 +119,15 @@ func (p *OpenCodePlugin) Uninstall() error {
 		return fmt.Errorf("remove %s: %w", pluginFile, err)
 	}
 
-	scriptPath, _ := hookScriptPath("opencode")
-	if scriptPath != "" {
-		os.Remove(scriptPath)
-	}
-	gPath, _ := guardScriptPath("opencode")
-	if gPath != "" {
-		os.Remove(gPath)
+	if agentID != "" {
+		scriptPath, _ := hookScriptPath(agentID)
+		if scriptPath != "" {
+			os.Remove(scriptPath)
+		}
+		gPath, _ := guardScriptPath(agentID)
+		if gPath != "" {
+			os.Remove(gPath)
+		}
 	}
 
 	fmt.Println("Uninstalled Elydora hook for OpenCode.")
@@ -132,11 +135,6 @@ func (p *OpenCodePlugin) Uninstall() error {
 }
 
 func (p *OpenCodePlugin) Status() (PluginStatus, error) {
-	scriptPath, err := hookScriptPath("opencode")
-	if err != nil {
-		return PluginStatus{}, err
-	}
-
 	pluginFile, err := p.configPath()
 	if err != nil {
 		return PluginStatus{}, err
@@ -148,12 +146,34 @@ func (p *OpenCodePlugin) Status() (PluginStatus, error) {
 		ConfigPath:  pluginFile,
 	}
 
-	if _, err := os.Stat(scriptPath); err == nil {
-		status.HookScriptExists = true
-	}
-
 	if _, err := os.Stat(pluginFile); err == nil {
 		status.HookConfigured = true
+
+		// Read the plugin file to extract the hook script path
+		data, readErr := os.ReadFile(pluginFile)
+		if readErr == nil {
+			content := string(data)
+			// Look for the elydora hook.js path in the plugin file content
+			if idx := strings.Index(content, ".elydora"); idx >= 0 {
+				// Extract path from the spawn('node', ['/path/to/hook.js']) pattern
+				// Pragmatic: scan ~/.elydora/*/hook.js for existence
+				home, homeErr := os.UserHomeDir()
+				if homeErr == nil {
+					entries, dirErr := os.ReadDir(filepath.Join(home, ".elydora"))
+					if dirErr == nil {
+						for _, entry := range entries {
+							if entry.IsDir() {
+								hookPath := filepath.Join(home, ".elydora", entry.Name(), "hook.js")
+								if _, statErr := os.Stat(hookPath); statErr == nil {
+									status.HookScriptExists = true
+									break
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
 	status.Installed = status.HookConfigured && status.HookScriptExists

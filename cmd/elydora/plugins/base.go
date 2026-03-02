@@ -26,6 +26,6 @@ type PluginStatus struct {
 // AgentPlugin is the interface that every agent integration must implement.
 type AgentPlugin interface {
 	Install(config InstallConfig) error
-	Uninstall() error
+	Uninstall(agentID string) error
 	Status() (PluginStatus, error)
 }

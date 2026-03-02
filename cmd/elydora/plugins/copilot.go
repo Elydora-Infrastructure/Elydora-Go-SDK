@@ -7,19 +7,20 @@ import (
 	"strings"
 )
 
-// CursorPlugin manages the Elydora audit hook for Cursor.
-// It writes/merges into ~/.cursor/hooks.json using nested settings.hooks.postToolUse[].
-type CursorPlugin struct{}
+// CopilotPlugin manages the Elydora audit hook for GitHub Copilot CLI.
+// It writes/merges into .github/hooks/hooks.json (project-relative) using
+// hooks.preToolUse[]/postToolUse[] with bash/powershell command fields.
+type CopilotPlugin struct{}
 
-func (p *CursorPlugin) configPath() (string, error) {
-	home, err := os.UserHomeDir()
+func (p *CopilotPlugin) configPath() (string, error) {
+	cwd, err := os.Getwd()
 	if err != nil {
-		return "", fmt.Errorf("resolve home directory: %w", err)
+		return "", fmt.Errorf("resolve working directory: %w", err)
 	}
-	return filepath.Join(home, ".cursor", "hooks.json"), nil
+	return filepath.Join(cwd, ".github", "hooks", "hooks.json"), nil
 }
 
-func (p *CursorPlugin) Install(config InstallConfig) error {
+func (p *CopilotPlugin) Install(config InstallConfig) error {
 	scriptPath, err := hookScriptPath(config.AgentID)
 	if err != nil {
 		return err
@@ -50,6 +51,9 @@ func (p *CursorPlugin) Install(config InstallConfig) error {
 		return err
 	}
 
+	// Ensure version field is set
+	settings["version"] = float64(1)
+
 	// Ensure hooks object exists
 	hooks, _ := settings["hooks"].(map[string]interface{})
 	if hooks == nil {
@@ -61,14 +65,17 @@ func (p *CursorPlugin) Install(config InstallConfig) error {
 	var preFiltered []interface{}
 	for _, entry := range preToolUse {
 		if m, ok := entry.(map[string]interface{}); ok {
-			if cmd, _ := m["command"].(string); strings.Contains(cmd, "elydora") {
+			if isCopilotElydoraEntry(m) {
 				continue
 			}
 		}
 		preFiltered = append(preFiltered, entry)
 	}
 	guardEntry := map[string]interface{}{
-		"command": "node " + guardPath,
+		"type":       "command",
+		"bash":       "node " + guardPath,
+		"powershell": "node " + guardPath,
+		"timeoutSec": float64(5),
 	}
 	preFiltered = append(preFiltered, guardEntry)
 	hooks["preToolUse"] = preFiltered
@@ -78,14 +85,17 @@ func (p *CursorPlugin) Install(config InstallConfig) error {
 	var postFiltered []interface{}
 	for _, entry := range postToolUse {
 		if m, ok := entry.(map[string]interface{}); ok {
-			if cmd, _ := m["command"].(string); strings.Contains(cmd, "elydora") {
+			if isCopilotElydoraEntry(m) {
 				continue
 			}
 		}
 		postFiltered = append(postFiltered, entry)
 	}
 	hookEntry := map[string]interface{}{
-		"command": "node " + scriptPath,
+		"type":       "command",
+		"bash":       "node " + scriptPath,
+		"powershell": "node " + scriptPath,
+		"timeoutSec": float64(5),
 	}
 	postFiltered = append(postFiltered, hookEntry)
 	hooks["postToolUse"] = postFiltered
@@ -95,11 +105,11 @@ func (p *CursorPlugin) Install(config InstallConfig) error {
 	if err := writeJSONFile(configPath, settings); err != nil {
 		return err
 	}
-	fmt.Printf("Installed Elydora hook for Cursor at %s\n", configPath)
+	fmt.Printf("Installed Elydora hook for Copilot CLI at %s\n", configPath)
 	return nil
 }
 
-func (p *CursorPlugin) Uninstall(agentID string) error {
+func (p *CopilotPlugin) Uninstall(agentID string) error {
 	configPath, err := p.configPath()
 	if err != nil {
 		return err
@@ -112,7 +122,7 @@ func (p *CursorPlugin) Uninstall(agentID string) error {
 
 	hooks, _ := settings["hooks"].(map[string]interface{})
 	if hooks == nil {
-		fmt.Println("No Cursor hooks found.")
+		fmt.Println("No Copilot CLI hooks found.")
 		return nil
 	}
 
@@ -121,7 +131,7 @@ func (p *CursorPlugin) Uninstall(agentID string) error {
 	var preFiltered []interface{}
 	for _, entry := range preToolUse {
 		if m, ok := entry.(map[string]interface{}); ok {
-			if cmd, _ := m["command"].(string); strings.Contains(cmd, "elydora") {
+			if isCopilotElydoraEntry(m) {
 				continue
 			}
 		}
@@ -138,7 +148,7 @@ func (p *CursorPlugin) Uninstall(agentID string) error {
 	var postFiltered []interface{}
 	for _, entry := range postToolUse {
 		if m, ok := entry.(map[string]interface{}); ok {
-			if cmd, _ := m["command"].(string); strings.Contains(cmd, "elydora") {
+			if isCopilotElydoraEntry(m) {
 				continue
 			}
 		}
@@ -170,19 +180,19 @@ func (p *CursorPlugin) Uninstall(agentID string) error {
 			os.Remove(gPath)
 		}
 	}
-	fmt.Println("Uninstalled Elydora hook for Cursor.")
+	fmt.Println("Uninstalled Elydora hook for Copilot CLI.")
 	return nil
 }
 
-func (p *CursorPlugin) Status() (PluginStatus, error) {
+func (p *CopilotPlugin) Status() (PluginStatus, error) {
 	configPath, err := p.configPath()
 	if err != nil {
 		return PluginStatus{}, err
 	}
 
 	status := PluginStatus{
-		AgentName:   "cursor",
-		DisplayName: "Cursor",
+		AgentName:   "copilot",
+		DisplayName: "Copilot CLI",
 		ConfigPath:  configPath,
 	}
 
@@ -193,12 +203,12 @@ func (p *CursorPlugin) Status() (PluginStatus, error) {
 
 	hooks, _ := settings["hooks"].(map[string]interface{})
 	if hooks != nil {
-		preConfigured := hasCursorElydoraEntry(hooks["preToolUse"])
-		postConfigured := hasCursorElydoraEntry(hooks["postToolUse"])
+		preConfigured := hasCopilotElydoraEntry(hooks["preToolUse"])
+		postConfigured := hasCopilotElydoraEntry(hooks["postToolUse"])
 		status.HookConfigured = preConfigured && postConfigured
 
 		// Extract hook script path from the configured command
-		scriptPath := extractCursorElydoraScriptPath(hooks["postToolUse"])
+		scriptPath := extractCopilotElydoraScriptPath(hooks["postToolUse"])
 		if scriptPath != "" {
 			if _, err := os.Stat(scriptPath); err == nil {
 				status.HookScriptExists = true
@@ -210,28 +220,42 @@ func (p *CursorPlugin) Status() (PluginStatus, error) {
 	return status, nil
 }
 
-// extractCursorElydoraScriptPath extracts the script path from a Cursor hook array's Elydora command entry.
-func extractCursorElydoraScriptPath(hookArray interface{}) string {
-	arr, _ := hookArray.([]interface{})
-	for _, entry := range arr {
-		if m, ok := entry.(map[string]interface{}); ok {
-			if cmd, _ := m["command"].(string); strings.Contains(cmd, "elydora") {
-				return extractPathFromNodeCommand(cmd)
-			}
-		}
+// isCopilotElydoraEntry checks if a Copilot hook entry (bash/powershell fields) is an Elydora hook.
+func isCopilotElydoraEntry(m map[string]interface{}) bool {
+	if bash, _ := m["bash"].(string); strings.Contains(bash, "elydora") {
+		return true
 	}
-	return ""
+	if ps, _ := m["powershell"].(string); strings.Contains(ps, "elydora") {
+		return true
+	}
+	return false
 }
 
-// hasCursorElydoraEntry checks if a Cursor hook array (flat format) contains an Elydora entry.
-func hasCursorElydoraEntry(hookArray interface{}) bool {
+// hasCopilotElydoraEntry checks if a Copilot hook array contains an Elydora entry.
+func hasCopilotElydoraEntry(hookArray interface{}) bool {
 	arr, _ := hookArray.([]interface{})
 	for _, entry := range arr {
 		if m, ok := entry.(map[string]interface{}); ok {
-			if cmd, _ := m["command"].(string); strings.Contains(cmd, "elydora") {
+			if isCopilotElydoraEntry(m) {
 				return true
 			}
 		}
 	}
 	return false
+}
+
+// extractCopilotElydoraScriptPath extracts the script path from a Copilot hook array's Elydora command.
+func extractCopilotElydoraScriptPath(hookArray interface{}) string {
+	arr, _ := hookArray.([]interface{})
+	for _, entry := range arr {
+		if m, ok := entry.(map[string]interface{}); ok {
+			if bash, _ := m["bash"].(string); strings.Contains(bash, "elydora") {
+				return extractPathFromNodeCommand(bash)
+			}
+			if ps, _ := m["powershell"].(string); strings.Contains(ps, "elydora") {
+				return extractPathFromNodeCommand(ps)
+			}
+		}
+	}
+	return ""
 }

@@ -7,11 +7,11 @@ import (
 	"path/filepath"
 )
 
-// KiroPlugin manages the Elydora audit hook for Kiro.
+// KiroIdePlugin manages the Elydora audit hook for Kiro IDE.
 // It writes a .kiro/hooks/elydora-audit.kiro.hook JSON file in the home directory.
-type KiroPlugin struct{}
+type KiroIdePlugin struct{}
 
-func (p *KiroPlugin) configPath() (string, error) {
+func (p *KiroIdePlugin) configPath() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("resolve home directory: %w", err)
@@ -19,8 +19,8 @@ func (p *KiroPlugin) configPath() (string, error) {
 	return filepath.Join(home, ".kiro", "hooks", "elydora-audit.kiro.hook"), nil
 }
 
-func (p *KiroPlugin) Install(config InstallConfig) error {
-	scriptPath, err := hookScriptPath("kiro")
+func (p *KiroIdePlugin) Install(config InstallConfig) error {
+	scriptPath, err := hookScriptPath(config.AgentID)
 	if err != nil {
 		return err
 	}
@@ -34,7 +34,7 @@ func (p *KiroPlugin) Install(config InstallConfig) error {
 
 	guardPath := config.GuardScriptPath
 	if guardPath == "" {
-		guardPath, err = guardScriptPath("kiro")
+		guardPath, err = guardScriptPath(config.AgentID)
 		if err != nil {
 			return err
 		}
@@ -49,16 +49,16 @@ func (p *KiroPlugin) Install(config InstallConfig) error {
 		return fmt.Errorf("create directory %s: %w", dir, err)
 	}
 
-	content := buildKiroHookFile(scriptPath, guardPath)
+	content := buildKiroIdeHookFile(scriptPath, guardPath)
 	if err := os.WriteFile(hookFile, []byte(content), 0644); err != nil {
 		return fmt.Errorf("write %s: %w", hookFile, err)
 	}
 
-	fmt.Printf("Installed Elydora hook for Kiro at %s\n", hookFile)
+	fmt.Printf("Installed Elydora hook for Kiro IDE at %s\n", hookFile)
 	return nil
 }
 
-func buildKiroHookFile(scriptPath, guardPath string) string {
+func buildKiroIdeHookFile(scriptPath, guardPath string) string {
 	hookConfig := map[string]interface{}{
 		"name": "Elydora Audit",
 		"hooks": map[string]interface{}{
@@ -76,7 +76,7 @@ func buildKiroHookFile(scriptPath, guardPath string) string {
 	return string(encoded) + "\n"
 }
 
-func (p *KiroPlugin) Uninstall() error {
+func (p *KiroIdePlugin) Uninstall(agentID string) error {
 	hookFile, err := p.configPath()
 	if err != nil {
 		return err
@@ -85,38 +85,31 @@ func (p *KiroPlugin) Uninstall() error {
 		return fmt.Errorf("remove %s: %w", hookFile, err)
 	}
 
-	scriptPath, _ := hookScriptPath("kiro")
-	if scriptPath != "" {
-		os.Remove(scriptPath)
-	}
-	gPath, _ := guardScriptPath("kiro")
-	if gPath != "" {
-		os.Remove(gPath)
+	if agentID != "" {
+		scriptPath, _ := hookScriptPath(agentID)
+		if scriptPath != "" {
+			os.Remove(scriptPath)
+		}
+		gPath, _ := guardScriptPath(agentID)
+		if gPath != "" {
+			os.Remove(gPath)
+		}
 	}
 
-	fmt.Println("Uninstalled Elydora hook for Kiro.")
+	fmt.Println("Uninstalled Elydora hook for Kiro IDE.")
 	return nil
 }
 
-func (p *KiroPlugin) Status() (PluginStatus, error) {
-	scriptPath, err := hookScriptPath("kiro")
-	if err != nil {
-		return PluginStatus{}, err
-	}
-
+func (p *KiroIdePlugin) Status() (PluginStatus, error) {
 	hookFile, err := p.configPath()
 	if err != nil {
 		return PluginStatus{}, err
 	}
 
 	status := PluginStatus{
-		AgentName:   "kiro",
-		DisplayName: "Kiro",
+		AgentName:   "kiroide",
+		DisplayName: "Kiro IDE",
 		ConfigPath:  hookFile,
-	}
-
-	if _, err := os.Stat(scriptPath); err == nil {
-		status.HookScriptExists = true
 	}
 
 	// Check if hook file exists and contains both pre_tool_use and post_tool_use
@@ -129,6 +122,18 @@ func (p *KiroPlugin) Status() (PluginStatus, error) {
 				_, hasPre := hooks["pre_tool_use"]
 				_, hasPost := hooks["post_tool_use"]
 				status.HookConfigured = hasPre && hasPost
+
+				// Extract hook script path from the post_tool_use command
+				if postHook, ok := hooks["post_tool_use"].(map[string]interface{}); ok {
+					if cmd, _ := postHook["command"].(string); cmd != "" {
+						scriptPath := extractPathFromNodeCommand(cmd)
+						if scriptPath != "" {
+							if _, err := os.Stat(scriptPath); err == nil {
+								status.HookScriptExists = true
+							}
+						}
+					}
+				}
 			}
 		}
 	}

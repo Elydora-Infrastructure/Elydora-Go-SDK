@@ -3,6 +3,7 @@ package plugins
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
 // GeminiPlugin manages the Elydora audit hook for Gemini CLI.
@@ -10,7 +11,7 @@ import (
 type GeminiPlugin struct{}
 
 func (p *GeminiPlugin) Install(config InstallConfig) error {
-	scriptPath, err := hookScriptPath("gemini")
+	scriptPath, err := hookScriptPath(config.AgentID)
 	if err != nil {
 		return err
 	}
@@ -24,7 +25,7 @@ func (p *GeminiPlugin) Install(config InstallConfig) error {
 
 	guardPath := config.GuardScriptPath
 	if guardPath == "" {
-		guardPath, err = guardScriptPath("gemini")
+		guardPath, err = guardScriptPath(config.AgentID)
 		if err != nil {
 			return err
 		}
@@ -34,7 +35,7 @@ func (p *GeminiPlugin) Install(config InstallConfig) error {
 	if err != nil {
 		return err
 	}
-	configPath := configDir + "/settings.json"
+	configPath := filepath.Join(configDir, "settings.json")
 
 	settings, err := readJSONFile(configPath)
 	if err != nil {
@@ -99,12 +100,12 @@ func (p *GeminiPlugin) Install(config InstallConfig) error {
 	return nil
 }
 
-func (p *GeminiPlugin) Uninstall() error {
+func (p *GeminiPlugin) Uninstall(agentID string) error {
 	configDir, err := expandHome("~/.gemini")
 	if err != nil {
 		return err
 	}
-	configPath := configDir + "/settings.json"
+	configPath := filepath.Join(configDir, "settings.json")
 
 	settings, err := readJSONFile(configPath)
 	if err != nil {
@@ -161,38 +162,31 @@ func (p *GeminiPlugin) Uninstall() error {
 		return err
 	}
 
-	scriptPath, _ := hookScriptPath("gemini")
-	if scriptPath != "" {
-		os.Remove(scriptPath)
-	}
-	gPath, _ := guardScriptPath("gemini")
-	if gPath != "" {
-		os.Remove(gPath)
+	if agentID != "" {
+		scriptPath, _ := hookScriptPath(agentID)
+		if scriptPath != "" {
+			os.Remove(scriptPath)
+		}
+		gPath, _ := guardScriptPath(agentID)
+		if gPath != "" {
+			os.Remove(gPath)
+		}
 	}
 	fmt.Println("Uninstalled Elydora hook for Gemini CLI.")
 	return nil
 }
 
 func (p *GeminiPlugin) Status() (PluginStatus, error) {
-	scriptPath, err := hookScriptPath("gemini")
-	if err != nil {
-		return PluginStatus{}, err
-	}
-
 	configDir, err := expandHome("~/.gemini")
 	if err != nil {
 		return PluginStatus{}, err
 	}
-	configPath := configDir + "/settings.json"
+	configPath := filepath.Join(configDir, "settings.json")
 
 	status := PluginStatus{
 		AgentName:   "gemini",
 		DisplayName: "Gemini CLI",
 		ConfigPath:  configPath,
-	}
-
-	if _, err := os.Stat(scriptPath); err == nil {
-		status.HookScriptExists = true
 	}
 
 	settings, err := readJSONFile(configPath)
@@ -205,6 +199,14 @@ func (p *GeminiPlugin) Status() (PluginStatus, error) {
 		preConfigured := hasElydoraEntry(hooks["BeforeTool"])
 		postConfigured := hasElydoraEntry(hooks["AfterTool"])
 		status.HookConfigured = preConfigured && postConfigured
+
+		// Extract hook script path from the configured command
+		scriptPath := extractElydoraScriptPath(hooks["AfterTool"])
+		if scriptPath != "" {
+			if _, err := os.Stat(scriptPath); err == nil {
+				status.HookScriptExists = true
+			}
+		}
 	}
 
 	status.Installed = status.HookConfigured && status.HookScriptExists

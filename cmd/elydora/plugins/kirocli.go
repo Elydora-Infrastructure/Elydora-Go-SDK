@@ -3,14 +3,23 @@ package plugins
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
-// AugmentPlugin manages the Elydora audit hook for Augment Code.
-// It merges a PostToolUse hook into ~/.augment/settings.json.
-type AugmentPlugin struct{}
+// KiroCliPlugin manages the Elydora audit hook for Kiro CLI.
+// It merges PreToolUse/PostToolUse hooks into ~/.kiro/settings.json.
+type KiroCliPlugin struct{}
 
-func (p *AugmentPlugin) Install(config InstallConfig) error {
-	scriptPath, err := hookScriptPath("augment")
+func (p *KiroCliPlugin) configPath() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("resolve home directory: %w", err)
+	}
+	return filepath.Join(home, ".kiro", "settings.json"), nil
+}
+
+func (p *KiroCliPlugin) Install(config InstallConfig) error {
+	scriptPath, err := hookScriptPath(config.AgentID)
 	if err != nil {
 		return err
 	}
@@ -24,17 +33,16 @@ func (p *AugmentPlugin) Install(config InstallConfig) error {
 
 	guardPath := config.GuardScriptPath
 	if guardPath == "" {
-		guardPath, err = guardScriptPath("augment")
+		guardPath, err = guardScriptPath(config.AgentID)
 		if err != nil {
 			return err
 		}
 	}
 
-	configDir, err := expandHome("~/.augment")
+	configPath, err := p.configPath()
 	if err != nil {
 		return err
 	}
-	configPath := configDir + "/settings.json"
 
 	settings, err := readJSONFile(configPath)
 	if err != nil {
@@ -58,10 +66,12 @@ func (p *AugmentPlugin) Install(config InstallConfig) error {
 		preFiltered = append(preFiltered, entry)
 	}
 	guardEntry := map[string]interface{}{
+		"matcher": "*",
 		"hooks": []interface{}{
 			map[string]interface{}{
-				"type":    "command",
-				"command": "node " + guardPath,
+				"type":       "command",
+				"command":    "node " + guardPath,
+				"timeout_ms": float64(5000),
 			},
 		},
 	}
@@ -80,10 +90,12 @@ func (p *AugmentPlugin) Install(config InstallConfig) error {
 		postFiltered = append(postFiltered, entry)
 	}
 	hookEntry := map[string]interface{}{
+		"matcher": "*",
 		"hooks": []interface{}{
 			map[string]interface{}{
-				"type":    "command",
-				"command": "node " + scriptPath,
+				"type":       "command",
+				"command":    "node " + scriptPath,
+				"timeout_ms": float64(5000),
 			},
 		},
 	}
@@ -95,16 +107,15 @@ func (p *AugmentPlugin) Install(config InstallConfig) error {
 	if err := writeJSONFile(configPath, settings); err != nil {
 		return err
 	}
-	fmt.Printf("Installed Elydora hook for Augment Code at %s\n", configPath)
+	fmt.Printf("Installed Elydora hook for Kiro CLI at %s\n", configPath)
 	return nil
 }
 
-func (p *AugmentPlugin) Uninstall() error {
-	configDir, err := expandHome("~/.augment")
+func (p *KiroCliPlugin) Uninstall(agentID string) error {
+	configPath, err := p.configPath()
 	if err != nil {
 		return err
 	}
-	configPath := configDir + "/settings.json"
 
 	settings, err := readJSONFile(configPath)
 	if err != nil {
@@ -113,7 +124,7 @@ func (p *AugmentPlugin) Uninstall() error {
 
 	hooks, _ := settings["hooks"].(map[string]interface{})
 	if hooks == nil {
-		fmt.Println("No Augment Code hooks found.")
+		fmt.Println("No Kiro CLI hooks found.")
 		return nil
 	}
 
@@ -161,38 +172,30 @@ func (p *AugmentPlugin) Uninstall() error {
 		return err
 	}
 
-	scriptPath, _ := hookScriptPath("augment")
-	if scriptPath != "" {
-		os.Remove(scriptPath)
+	if agentID != "" {
+		scriptPath, _ := hookScriptPath(agentID)
+		if scriptPath != "" {
+			os.Remove(scriptPath)
+		}
+		gPath, _ := guardScriptPath(agentID)
+		if gPath != "" {
+			os.Remove(gPath)
+		}
 	}
-	gPath, _ := guardScriptPath("augment")
-	if gPath != "" {
-		os.Remove(gPath)
-	}
-	fmt.Println("Uninstalled Elydora hook for Augment Code.")
+	fmt.Println("Uninstalled Elydora hook for Kiro CLI.")
 	return nil
 }
 
-func (p *AugmentPlugin) Status() (PluginStatus, error) {
-	scriptPath, err := hookScriptPath("augment")
+func (p *KiroCliPlugin) Status() (PluginStatus, error) {
+	configPath, err := p.configPath()
 	if err != nil {
 		return PluginStatus{}, err
 	}
-
-	configDir, err := expandHome("~/.augment")
-	if err != nil {
-		return PluginStatus{}, err
-	}
-	configPath := configDir + "/settings.json"
 
 	status := PluginStatus{
-		AgentName:   "augment",
-		DisplayName: "Augment Code",
+		AgentName:   "kirocli",
+		DisplayName: "Kiro CLI",
 		ConfigPath:  configPath,
-	}
-
-	if _, err := os.Stat(scriptPath); err == nil {
-		status.HookScriptExists = true
 	}
 
 	settings, err := readJSONFile(configPath)
@@ -205,8 +208,17 @@ func (p *AugmentPlugin) Status() (PluginStatus, error) {
 		preConfigured := hasElydoraEntry(hooks["PreToolUse"])
 		postConfigured := hasElydoraEntry(hooks["PostToolUse"])
 		status.HookConfigured = preConfigured && postConfigured
+
+		// Extract hook script path from the configured command
+		scriptPath := extractElydoraScriptPath(hooks["PostToolUse"])
+		if scriptPath != "" {
+			if _, err := os.Stat(scriptPath); err == nil {
+				status.HookScriptExists = true
+			}
+		}
 	}
 
 	status.Installed = status.HookConfigured && status.HookScriptExists
 	return status, nil
 }
+

@@ -4,22 +4,21 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
-// CursorPlugin manages the Elydora audit hook for Cursor.
-// It writes/merges into ~/.cursor/hooks.json using nested settings.hooks.postToolUse[].
-type CursorPlugin struct{}
+// LettaPlugin manages the Elydora audit hook for Letta Code.
+// It merges PreToolUse/PostToolUse hooks into ~/.letta/settings.json.
+type LettaPlugin struct{}
 
-func (p *CursorPlugin) configPath() (string, error) {
+func (p *LettaPlugin) configPath() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("resolve home directory: %w", err)
 	}
-	return filepath.Join(home, ".cursor", "hooks.json"), nil
+	return filepath.Join(home, ".letta", "settings.json"), nil
 }
 
-func (p *CursorPlugin) Install(config InstallConfig) error {
+func (p *LettaPlugin) Install(config InstallConfig) error {
 	scriptPath, err := hookScriptPath(config.AgentID)
 	if err != nil {
 		return err
@@ -50,56 +49,67 @@ func (p *CursorPlugin) Install(config InstallConfig) error {
 		return err
 	}
 
-	// Ensure hooks object exists
 	hooks, _ := settings["hooks"].(map[string]interface{})
 	if hooks == nil {
 		hooks = make(map[string]interface{})
 	}
 
-	// --- preToolUse (guard — freeze enforcement) ---
-	preToolUse, _ := hooks["preToolUse"].([]interface{})
+	// --- PreToolUse (guard — freeze enforcement) ---
+	preToolUse, _ := hooks["PreToolUse"].([]interface{})
 	var preFiltered []interface{}
 	for _, entry := range preToolUse {
 		if m, ok := entry.(map[string]interface{}); ok {
-			if cmd, _ := m["command"].(string); strings.Contains(cmd, "elydora") {
+			if isElydoraHookEntry(m) {
 				continue
 			}
 		}
 		preFiltered = append(preFiltered, entry)
 	}
 	guardEntry := map[string]interface{}{
-		"command": "node " + guardPath,
+		"matcher": "*",
+		"hooks": []interface{}{
+			map[string]interface{}{
+				"type":    "command",
+				"command": "node " + guardPath,
+			},
+		},
 	}
 	preFiltered = append(preFiltered, guardEntry)
-	hooks["preToolUse"] = preFiltered
+	hooks["PreToolUse"] = preFiltered
 
-	// --- postToolUse (audit logging) ---
-	postToolUse, _ := hooks["postToolUse"].([]interface{})
+	// --- PostToolUse (audit logging) ---
+	postToolUse, _ := hooks["PostToolUse"].([]interface{})
 	var postFiltered []interface{}
 	for _, entry := range postToolUse {
 		if m, ok := entry.(map[string]interface{}); ok {
-			if cmd, _ := m["command"].(string); strings.Contains(cmd, "elydora") {
+			if isElydoraHookEntry(m) {
 				continue
 			}
 		}
 		postFiltered = append(postFiltered, entry)
 	}
 	hookEntry := map[string]interface{}{
-		"command": "node " + scriptPath,
+		"matcher": "*",
+		"hooks": []interface{}{
+			map[string]interface{}{
+				"type":    "command",
+				"command": "node " + scriptPath,
+			},
+		},
 	}
 	postFiltered = append(postFiltered, hookEntry)
-	hooks["postToolUse"] = postFiltered
+	hooks["PostToolUse"] = postFiltered
 
 	settings["hooks"] = hooks
 
 	if err := writeJSONFile(configPath, settings); err != nil {
 		return err
 	}
-	fmt.Printf("Installed Elydora hook for Cursor at %s\n", configPath)
+	fmt.Printf("Installed Elydora hook for Letta Code at %s\n", configPath)
 	return nil
 }
 
-func (p *CursorPlugin) Uninstall(agentID string) error {
+func (p *LettaPlugin) Uninstall(agentID string) error {
 	configPath, err := p.configPath()
 	if err != nil {
 		return err
@@ -112,42 +122,42 @@ func (p *CursorPlugin) Uninstall(agentID string) error {
 
 	hooks, _ := settings["hooks"].(map[string]interface{})
 	if hooks == nil {
-		fmt.Println("No Cursor hooks found.")
+		fmt.Println("No Letta Code hooks found.")
 		return nil
 	}
 
-	// Remove preToolUse Elydora entries
-	preToolUse, _ := hooks["preToolUse"].([]interface{})
+	// Remove PreToolUse Elydora entries
+	preToolUse, _ := hooks["PreToolUse"].([]interface{})
 	var preFiltered []interface{}
 	for _, entry := range preToolUse {
 		if m, ok := entry.(map[string]interface{}); ok {
-			if cmd, _ := m["command"].(string); strings.Contains(cmd, "elydora") {
+			if isElydoraHookEntry(m) {
 				continue
 			}
 		}
 		preFiltered = append(preFiltered, entry)
 	}
 	if len(preFiltered) == 0 {
-		delete(hooks, "preToolUse")
+		delete(hooks, "PreToolUse")
 	} else {
-		hooks["preToolUse"] = preFiltered
+		hooks["PreToolUse"] = preFiltered
 	}
 
-	// Remove postToolUse Elydora entries
-	postToolUse, _ := hooks["postToolUse"].([]interface{})
+	// Remove PostToolUse Elydora entries
+	postToolUse, _ := hooks["PostToolUse"].([]interface{})
 	var postFiltered []interface{}
 	for _, entry := range postToolUse {
 		if m, ok := entry.(map[string]interface{}); ok {
-			if cmd, _ := m["command"].(string); strings.Contains(cmd, "elydora") {
+			if isElydoraHookEntry(m) {
 				continue
 			}
 		}
 		postFiltered = append(postFiltered, entry)
 	}
 	if len(postFiltered) == 0 {
-		delete(hooks, "postToolUse")
+		delete(hooks, "PostToolUse")
 	} else {
-		hooks["postToolUse"] = postFiltered
+		hooks["PostToolUse"] = postFiltered
 	}
 
 	if len(hooks) == 0 {
@@ -170,19 +180,19 @@ func (p *CursorPlugin) Uninstall(agentID string) error {
 			os.Remove(gPath)
 		}
 	}
-	fmt.Println("Uninstalled Elydora hook for Cursor.")
+	fmt.Println("Uninstalled Elydora hook for Letta Code.")
 	return nil
 }
 
-func (p *CursorPlugin) Status() (PluginStatus, error) {
+func (p *LettaPlugin) Status() (PluginStatus, error) {
 	configPath, err := p.configPath()
 	if err != nil {
 		return PluginStatus{}, err
 	}
 
 	status := PluginStatus{
-		AgentName:   "cursor",
-		DisplayName: "Cursor",
+		AgentName:   "letta",
+		DisplayName: "Letta Code",
 		ConfigPath:  configPath,
 	}
 
@@ -193,12 +203,12 @@ func (p *CursorPlugin) Status() (PluginStatus, error) {
 
 	hooks, _ := settings["hooks"].(map[string]interface{})
 	if hooks != nil {
-		preConfigured := hasCursorElydoraEntry(hooks["preToolUse"])
-		postConfigured := hasCursorElydoraEntry(hooks["postToolUse"])
+		preConfigured := hasElydoraEntry(hooks["PreToolUse"])
+		postConfigured := hasElydoraEntry(hooks["PostToolUse"])
 		status.HookConfigured = preConfigured && postConfigured
 
 		// Extract hook script path from the configured command
-		scriptPath := extractCursorElydoraScriptPath(hooks["postToolUse"])
+		scriptPath := extractElydoraScriptPath(hooks["PostToolUse"])
 		if scriptPath != "" {
 			if _, err := os.Stat(scriptPath); err == nil {
 				status.HookScriptExists = true
@@ -210,28 +220,3 @@ func (p *CursorPlugin) Status() (PluginStatus, error) {
 	return status, nil
 }
 
-// extractCursorElydoraScriptPath extracts the script path from a Cursor hook array's Elydora command entry.
-func extractCursorElydoraScriptPath(hookArray interface{}) string {
-	arr, _ := hookArray.([]interface{})
-	for _, entry := range arr {
-		if m, ok := entry.(map[string]interface{}); ok {
-			if cmd, _ := m["command"].(string); strings.Contains(cmd, "elydora") {
-				return extractPathFromNodeCommand(cmd)
-			}
-		}
-	}
-	return ""
-}
-
-// hasCursorElydoraEntry checks if a Cursor hook array (flat format) contains an Elydora entry.
-func hasCursorElydoraEntry(hookArray interface{}) bool {
-	arr, _ := hookArray.([]interface{})
-	for _, entry := range arr {
-		if m, ok := entry.(map[string]interface{}); ok {
-			if cmd, _ := m["command"].(string); strings.Contains(cmd, "elydora") {
-				return true
-			}
-		}
-	}
-	return false
-}

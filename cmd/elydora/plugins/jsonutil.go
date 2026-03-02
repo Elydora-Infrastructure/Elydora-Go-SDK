@@ -53,20 +53,20 @@ func writeJSONFile(path string, data map[string]interface{}) error {
 	return nil
 }
 
-// hookScriptPath returns the default path for the hook script inside ~/.elydora/hooks/.
-func hookScriptPath(agentName string) (string, error) {
+// hookScriptPath returns the default path for the hook script inside ~/.elydora/<agentId>/.
+func hookScriptPath(agentId string) (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("resolve home directory: %w", err)
 	}
-	return filepath.Join(home, ".elydora", "hooks", agentName+"-hook.js"), nil
+	return filepath.Join(home, ".elydora", agentId, "hook.js"), nil
 }
 
-// guardScriptPath returns the default path for the guard script inside ~/.elydora/hooks/.
-func guardScriptPath(agentName string) (string, error) {
+// guardScriptPath returns the default path for the guard script inside ~/.elydora/<agentId>/.
+func guardScriptPath(agentId string) (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("resolve home directory: %w", err)
 	}
-	return filepath.Join(home, ".elydora", "hooks", agentName+"-guard.js"), nil
+	return filepath.Join(home, ".elydora", agentId, "guard.js"), nil
 }
