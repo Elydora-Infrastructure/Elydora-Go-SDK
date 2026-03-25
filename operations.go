@@ -88,7 +88,11 @@ func (c *Client) GetOperation(operationID string) (*GetOperationResponse, error)
 // VerifyOperation verifies the integrity of an operation.
 func (c *Client) VerifyOperation(operationID string) (*VerifyOperationResponse, error) {
 	var result VerifyOperationResponse
-	if err := c.doPost(fmt.Sprintf("/v1/operations/%s/verify", operationID), nil, &result); err != nil {
+	if err := c.doPost(
+		fmt.Sprintf("/v1/operations/%s/verify", operationID),
+		map[string]interface{}{},
+		&result,
+	); err != nil {
 		return nil, err
 	}
 	return &result, nil

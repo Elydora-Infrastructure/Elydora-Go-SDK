@@ -140,3 +140,13 @@ func (c *Client) IssueApiToken(req *IssueApiTokenRequest) (*IssueApiTokenRespons
 	}
 	return &result, nil
 }
+
+// RotateApiToken rotates the current API token and leaves the old token
+// valid for a 24h grace window.
+func (c *Client) RotateApiToken() (*RotateApiTokenResponse, error) {
+	var result RotateApiTokenResponse
+	if err := c.doPost("/v1/auth/rotate", map[string]interface{}{}, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
