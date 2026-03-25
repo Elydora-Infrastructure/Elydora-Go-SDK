@@ -257,10 +257,9 @@ type IssueApiTokenResponse struct {
 }
 
 type RotateApiTokenResponse struct {
-	Token                  string `json:"token"`
-	ExpiresAt              *int64 `json:"expires_at"`
-	TokenID                string `json:"token_id"`
-	PreviousTokenGraceUntil int64 `json:"previous_token_grace_until"`
+	Token     string `json:"token"`
+	ExpiresAt *int64 `json:"expires_at"`
+	TokenID   string `json:"token_id"`
 }
 
 type HealthResponse struct {

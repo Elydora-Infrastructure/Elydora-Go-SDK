@@ -6,10 +6,8 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	"net/http"
 	"os"
 	"testing"
-	"time"
 
 	elydora "github.com/Elydora-Infrastructure/Elydora-Go-SDK"
 )
@@ -91,8 +89,8 @@ func TestSDKCompatibilityAgainstLatestAPI(t *testing.T) {
 	if err != nil {
 		t.Fatalf("rotate api token failed: %v", err)
 	}
-	if rotateResp.Token == "" || rotateResp.PreviousTokenGraceUntil <= 0 {
-		t.Fatalf("rotate response incomplete: %+v", rotateResp)
+	if rotateResp.Token == "" {
+		t.Fatalf("rotate response missing token: %+v", rotateResp)
 	}
 
 	client.SetToken(rotateResp.Token)
@@ -102,23 +100,6 @@ func TestSDKCompatibilityAgainstLatestAPI(t *testing.T) {
 	}
 	if meWithRotated.User.OrgID != login.User.OrgID {
 		t.Fatalf("rotated token org mismatch: got %s want %s", meWithRotated.User.OrgID, login.User.OrgID)
-	}
-
-	// Old token should still be accepted during grace window.
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/v1/auth/me", baseURL), nil)
-	if err != nil {
-		t.Fatalf("create old token request: %v", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+oldToken)
-	req.Header.Set("Accept", "application/json")
-	httpClient := &http.Client{Timeout: 20 * time.Second}
-	oldTokenResp, err := httpClient.Do(req)
-	if err != nil {
-		t.Fatalf("old token grace request failed: %v", err)
-	}
-	oldTokenResp.Body.Close()
-	if oldTokenResp.StatusCode != http.StatusOK {
-		t.Fatalf("old token grace expected 200, got %d", oldTokenResp.StatusCode)
 	}
 
 	_, err = client.RegisterAgent(&elydora.RegisterAgentRequest{

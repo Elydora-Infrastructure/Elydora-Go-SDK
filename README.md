@@ -108,15 +108,15 @@ client, err := elydora.NewClient(&elydora.Config{
 	BaseURL:    "https://...",   // API base URL (default: https://api.elydora.com)
 	TTLMs:      30000,           // Operation TTL in ms (default: 30000)
 	MaxRetries: 3,               // Max retries on transient failures (default: 3)
-	Token:      "<jwt>",         // JWT token for authenticated requests
+	Token:      "<token>",        // API token for authenticated requests
 })
 ```
 
 ### Client Methods
 
 ```go
-// Update the JWT token at runtime
-client.SetToken("new-jwt-token")
+// Update the API token at runtime
+client.SetToken("new-api-token")
 ```
 
 ### Authentication
@@ -128,7 +128,7 @@ reg, err := elydora.Register(baseURL, email, password,
 	elydora.WithOrgName("Acme Corp"),
 )
 
-// Login and receive a JWT
+// Login and receive a session token
 auth, err := elydora.Login(baseURL, email, password)
 
 // Get current authenticated user profile

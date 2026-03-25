@@ -49,7 +49,7 @@ func Register(baseURL, email, password string, opts ...RegisterOption) (*AuthReg
 	return &result, nil
 }
 
-// Login authenticates a user and returns a JWT token.
+// Login authenticates a user and returns a session token.
 func Login(baseURL, email, password string) (*AuthLoginResponse, error) {
 	if baseURL == "" {
 		baseURL = defaultBaseURL
