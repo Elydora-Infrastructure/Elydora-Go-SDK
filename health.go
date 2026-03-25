@@ -60,3 +60,57 @@ func Health(baseURL string) (*HealthResponse, error) {
 		Message:    string(respBody),
 	}
 }
+
+// DeepHealth checks the deep health of the Elydora API, including its backend
+// dependencies (D1, R2, KV). This is a public endpoint that does not require
+// authentication.
+func DeepHealth(baseURL string) (*DeepHealthResponse, error) {
+	if baseURL == "" {
+		baseURL = defaultBaseURL
+	}
+	baseURL = strings.TrimRight(baseURL, "/")
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	req, err := http.NewRequest(http.MethodGet, baseURL+"/v1/health/deep", nil)
+	if err != nil {
+		return nil, fmt.Errorf("elydora: create request: %w", err)
+	}
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("elydora: http request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(io.LimitReader(resp.Body, 10<<20))
+	if err != nil {
+		return nil, fmt.Errorf("elydora: read response body: %w", err)
+	}
+
+	// Accept both 200 (healthy) and 503 (degraded) as valid deep-health responses.
+	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusServiceUnavailable {
+		var result DeepHealthResponse
+		if err := json.Unmarshal(respBody, &result); err != nil {
+			return nil, fmt.Errorf("elydora: unmarshal response: %w", err)
+		}
+		return &result, nil
+	}
+
+	var errResp errorResponse
+	if err := json.Unmarshal(respBody, &errResp); err == nil && errResp.Error.Code != "" {
+		return nil, &ElydoraError{
+			StatusCode: resp.StatusCode,
+			Code:       errResp.Error.Code,
+			Message:    errResp.Error.Message,
+			RequestID:  errResp.Error.RequestID,
+			Details:    errResp.Error.Details,
+		}
+	}
+
+	return nil, &ElydoraError{
+		StatusCode: resp.StatusCode,
+		Code:       ErrorCodeInternalError,
+		Message:    string(respBody),
+	}
+}

@@ -24,10 +24,14 @@ func (c *Client) GetAgent(agentID string) (*GetAgentResponse, error) {
 }
 
 // FreezeAgent freezes an agent, preventing it from submitting operations.
-func (c *Client) FreezeAgent(agentID, reason string) error {
-	return c.doPost(fmt.Sprintf("/v1/agents/%s/freeze", agentID), &FreezeAgentRequest{
+func (c *Client) FreezeAgent(agentID, reason string) (*FreezeAgentResponse, error) {
+	var result FreezeAgentResponse
+	if err := c.doPost(fmt.Sprintf("/v1/agents/%s/freeze", agentID), &FreezeAgentRequest{
 		Reason: reason,
-	}, nil)
+	}, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
 }
 
 // RevokeKey revokes a specific key for an agent.
@@ -48,10 +52,25 @@ func (c *Client) ListAgents() (*ListAgentsResponse, error) {
 }
 
 // UnfreezeAgent unfreezes a previously frozen agent.
-func (c *Client) UnfreezeAgent(agentID, reason string) error {
-	return c.doPost(fmt.Sprintf("/v1/agents/%s/unfreeze", agentID), &UnfreezeAgentRequest{
+func (c *Client) UnfreezeAgent(agentID, reason string) (*UnfreezeAgentResponse, error) {
+	var result UnfreezeAgentResponse
+	if err := c.doPost(fmt.Sprintf("/v1/agents/%s/unfreeze", agentID), &UnfreezeAgentRequest{
 		Reason: reason,
-	}, nil)
+	}, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// UpdateAgent updates an agent's integration type.
+func (c *Client) UpdateAgent(agentID string, integrationType IntegrationType) (*UpdateAgentResponse, error) {
+	var result UpdateAgentResponse
+	if err := c.doRequest(http.MethodPatch, fmt.Sprintf("/v1/agents/%s", agentID), &UpdateAgentRequest{
+		IntegrationType: integrationType,
+	}, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
 }
 
 // DeleteAgent permanently deletes an agent and all associated data.

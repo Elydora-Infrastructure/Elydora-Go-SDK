@@ -20,6 +20,25 @@ const (
 	KeyStatusRevoked KeyStatus = "revoked"
 )
 
+type IntegrationType string
+
+const (
+	IntegrationTypeClaudecode  IntegrationType = "claudecode"
+	IntegrationTypeCursor      IntegrationType = "cursor"
+	IntegrationTypeGemini      IntegrationType = "gemini"
+	IntegrationTypeKiroCLI     IntegrationType = "kirocli"
+	IntegrationTypeKiroIDE     IntegrationType = "kiroide"
+	IntegrationTypeOpenCode    IntegrationType = "opencode"
+	IntegrationTypeCopilot     IntegrationType = "copilot"
+	IntegrationTypeLetta       IntegrationType = "letta"
+	IntegrationTypeCodex       IntegrationType = "codex"
+	IntegrationTypeKimi        IntegrationType = "kimi"
+	IntegrationTypeEnterprise  IntegrationType = "enterprise"
+	IntegrationTypeGUI         IntegrationType = "gui"
+	IntegrationTypeSDK         IntegrationType = "sdk"
+	IntegrationTypeOther       IntegrationType = "other"
+)
+
 type ExportStatus string
 
 const (
@@ -70,13 +89,14 @@ const (
 // ---------------------------------------------------------------------------
 
 type Agent struct {
-	AgentID           string      `json:"agent_id"`
-	OrgID             string      `json:"org_id"`
-	DisplayName       string      `json:"display_name"`
-	ResponsibleEntity string      `json:"responsible_entity"`
-	Status            AgentStatus `json:"status"`
-	CreatedAt         int64       `json:"created_at"`
-	UpdatedAt         int64       `json:"updated_at"`
+	AgentID           string          `json:"agent_id"`
+	OrgID             string          `json:"org_id"`
+	DisplayName       string          `json:"display_name"`
+	ResponsibleEntity string          `json:"responsible_entity"`
+	IntegrationType   IntegrationType `json:"integration_type"`
+	Status            AgentStatus     `json:"status"`
+	CreatedAt         int64           `json:"created_at"`
+	UpdatedAt         int64           `json:"updated_at"`
 }
 
 type AgentKey struct {
@@ -128,10 +148,12 @@ type Epoch struct {
 }
 
 type Organization struct {
-	OrgID     string `json:"org_id"`
-	Name      string `json:"name"`
-	CreatedAt int64  `json:"created_at"`
-	UpdatedAt int64  `json:"updated_at"`
+	OrgID       string  `json:"org_id"`
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	BAOrgID     *string `json:"ba_org_id"`
+	CreatedAt   int64   `json:"created_at"`
+	UpdatedAt   int64   `json:"updated_at"`
 }
 
 type User struct {
@@ -225,6 +247,11 @@ type FreezeAgentRequest struct {
 	Reason string `json:"reason"`
 }
 
+type FreezeAgentResponse struct {
+	Agent          Agent       `json:"agent"`
+	PreviousStatus AgentStatus `json:"previous_status"`
+}
+
 type RevokeAgentRequest struct {
 	KID    string `json:"kid"`
 	Reason string `json:"reason"`
@@ -232,6 +259,19 @@ type RevokeAgentRequest struct {
 
 type UnfreezeAgentRequest struct {
 	Reason string `json:"reason"`
+}
+
+type UnfreezeAgentResponse struct {
+	Agent          Agent       `json:"agent"`
+	PreviousStatus AgentStatus `json:"previous_status"`
+}
+
+type UpdateAgentRequest struct {
+	IntegrationType IntegrationType `json:"integration_type"`
+}
+
+type UpdateAgentResponse struct {
+	Agent Agent `json:"agent"`
 }
 
 type ListAgentsResponse struct {
@@ -313,7 +353,9 @@ type GetEpochResponse struct {
 }
 
 type EpochAnchor struct {
-	TSAToken string `json:"tsa_token,omitempty"`
+	TSAToken   string  `json:"tsa_token,omitempty"`
+	TSAUrl     string  `json:"tsa_url,omitempty"`
+	AnchoredAt *int64  `json:"anchored_at,omitempty"`
 }
 
 type ListEpochsResponse struct {
@@ -375,6 +417,93 @@ type AuthLoginRequest struct {
 type AuthLoginResponse struct {
 	User  User   `json:"user"`
 	Token string `json:"token"`
+}
+
+// AdminEvent represents an administrative event log entry.
+type AdminEvent struct {
+	EventID    string  `json:"event_id"`
+	OrgID      string  `json:"org_id"`
+	Actor      string  `json:"actor"`
+	Action     string  `json:"action"`
+	TargetType string  `json:"target_type"`
+	TargetID   string  `json:"target_id"`
+	Details    *string `json:"details"`
+	CreatedAt  int64   `json:"created_at"`
+}
+
+// AgentAssignment represents a many-to-many agent-to-user assignment.
+type AgentAssignment struct {
+	ID         string `json:"id"`
+	AgentID    string `json:"agent_id"`
+	UserID     string `json:"user_id"`
+	OrgID      string `json:"org_id"`
+	AssignedBy string `json:"assigned_by"`
+	CreatedAt  int64  `json:"created_at"`
+}
+
+// Webhook represents a registered webhook endpoint.
+type Webhook struct {
+	WebhookID   string   `json:"webhook_id"`
+	OrgID       string   `json:"org_id"`
+	EndpointURL string   `json:"endpoint_url"`
+	Events      []string `json:"events"`
+	Status      string   `json:"status"`
+	CreatedAt   int64    `json:"created_at"`
+	UpdatedAt   int64    `json:"updated_at"`
+}
+
+type ListWebhooksResponse struct {
+	Webhooks []Webhook `json:"webhooks"`
+}
+
+type RegisterWebhookRequest struct {
+	EndpointURL string   `json:"endpoint_url"`
+	Events      []string `json:"events"`
+	Secret      string   `json:"secret"`
+}
+
+type RegisterWebhookResponse struct {
+	Webhook Webhook `json:"webhook"`
+}
+
+// Member represents a console user returned from the members list endpoint.
+type Member struct {
+	MemberID    string `json:"member_id"`
+	UserID      string `json:"user_id"`
+	Role        string `json:"role"`
+	JoinedAt    string `json:"joined_at"`
+	Email       string `json:"email"`
+	DisplayName string `json:"display_name"`
+}
+
+type ListMembersResponse struct {
+	Members []Member `json:"members"`
+}
+
+type ListAdminEventsResponse struct {
+	Events []AdminEvent `json:"events"`
+}
+
+// DependencyHealth holds the health status of a single backend dependency.
+type DependencyHealth struct {
+	Status    string  `json:"status"`
+	LatencyMs int64   `json:"latency_ms"`
+	Error     *string `json:"error,omitempty"`
+}
+
+// DeepHealthDependencies lists the health of all backend dependencies.
+type DeepHealthDependencies struct {
+	D1 DependencyHealth `json:"d1"`
+	R2 DependencyHealth `json:"r2"`
+	KV DependencyHealth `json:"kv"`
+}
+
+// DeepHealthResponse is returned by GET /v1/health/deep.
+type DeepHealthResponse struct {
+	Status       string                 `json:"status"`
+	Version      string                 `json:"version"`
+	Timestamp    int64                  `json:"timestamp"`
+	Dependencies DeepHealthDependencies `json:"dependencies"`
 }
 
 // ---------------------------------------------------------------------------
