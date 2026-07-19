@@ -23,20 +23,25 @@ const (
 type IntegrationType string
 
 const (
-	IntegrationTypeClaudecode  IntegrationType = "claudecode"
-	IntegrationTypeCursor      IntegrationType = "cursor"
-	IntegrationTypeGemini      IntegrationType = "gemini"
-	IntegrationTypeKiroCLI     IntegrationType = "kirocli"
-	IntegrationTypeKiroIDE     IntegrationType = "kiroide"
-	IntegrationTypeOpenCode    IntegrationType = "opencode"
-	IntegrationTypeCopilot     IntegrationType = "copilot"
-	IntegrationTypeLetta       IntegrationType = "letta"
-	IntegrationTypeCodex       IntegrationType = "codex"
-	IntegrationTypeKimi        IntegrationType = "kimi"
-	IntegrationTypeEnterprise  IntegrationType = "enterprise"
-	IntegrationTypeGUI         IntegrationType = "gui"
-	IntegrationTypeSDK         IntegrationType = "sdk"
-	IntegrationTypeOther       IntegrationType = "other"
+	IntegrationTypeAugment    IntegrationType = "augment"
+	IntegrationTypeClaudecode IntegrationType = "claudecode"
+	IntegrationTypeCline      IntegrationType = "cline"
+	IntegrationTypeCodex      IntegrationType = "codex"
+	IntegrationTypeCopilot    IntegrationType = "copilot"
+	IntegrationTypeCursor     IntegrationType = "cursor"
+	IntegrationTypeDroid      IntegrationType = "droid"
+	IntegrationTypeGemini     IntegrationType = "gemini"
+	IntegrationTypeGrok       IntegrationType = "grok"
+	IntegrationTypeKimi       IntegrationType = "kimi"
+	IntegrationTypeKiroCLI    IntegrationType = "kirocli"
+	IntegrationTypeKiroIDE    IntegrationType = "kiroide"
+	IntegrationTypeLetta      IntegrationType = "letta"
+	IntegrationTypeOpenCode   IntegrationType = "opencode"
+	IntegrationTypeQwen       IntegrationType = "qwen"
+	IntegrationTypeEnterprise IntegrationType = "enterprise"
+	IntegrationTypeGUI        IntegrationType = "gui"
+	IntegrationTypeSDK        IntegrationType = "sdk"
+	IntegrationTypeOther      IntegrationType = "other"
 )
 
 type ExportStatus string
@@ -51,30 +56,30 @@ const (
 type RbacRole string
 
 const (
-	RbacRoleOrgOwner              RbacRole = "org_owner"
-	RbacRoleSecurityAdmin         RbacRole = "security_admin"
-	RbacRoleComplianceAuditor     RbacRole = "compliance_auditor"
-	RbacRoleReadonlyInvestigator  RbacRole = "readonly_investigator"
-	RbacRoleIntegrationEngineer   RbacRole = "integration_engineer"
+	RbacRoleOrgOwner             RbacRole = "org_owner"
+	RbacRoleSecurityAdmin        RbacRole = "security_admin"
+	RbacRoleComplianceAuditor    RbacRole = "compliance_auditor"
+	RbacRoleReadonlyInvestigator RbacRole = "readonly_investigator"
+	RbacRoleIntegrationEngineer  RbacRole = "integration_engineer"
 )
 
 type ErrorCode string
 
 const (
-	ErrorCodeInvalidSignature  ErrorCode = "INVALID_SIGNATURE"
-	ErrorCodeUnknownAgent      ErrorCode = "UNKNOWN_AGENT"
-	ErrorCodeKeyRevoked        ErrorCode = "KEY_REVOKED"
-	ErrorCodeAgentFrozen       ErrorCode = "AGENT_FROZEN"
-	ErrorCodeTTLExpired        ErrorCode = "TTL_EXPIRED"
-	ErrorCodeReplayDetected    ErrorCode = "REPLAY_DETECTED"
-	ErrorCodePrevHashMismatch  ErrorCode = "PREV_HASH_MISMATCH"
-	ErrorCodePayloadTooLarge   ErrorCode = "PAYLOAD_TOO_LARGE"
-	ErrorCodeRateLimited       ErrorCode = "RATE_LIMITED"
-	ErrorCodeInternalError     ErrorCode = "INTERNAL_ERROR"
-	ErrorCodeUnauthorized      ErrorCode = "UNAUTHORIZED"
-	ErrorCodeForbidden         ErrorCode = "FORBIDDEN"
-	ErrorCodeNotFound          ErrorCode = "NOT_FOUND"
-	ErrorCodeValidationError   ErrorCode = "VALIDATION_ERROR"
+	ErrorCodeInvalidSignature ErrorCode = "INVALID_SIGNATURE"
+	ErrorCodeUnknownAgent     ErrorCode = "UNKNOWN_AGENT"
+	ErrorCodeKeyRevoked       ErrorCode = "KEY_REVOKED"
+	ErrorCodeAgentFrozen      ErrorCode = "AGENT_FROZEN"
+	ErrorCodeTTLExpired       ErrorCode = "TTL_EXPIRED"
+	ErrorCodeReplayDetected   ErrorCode = "REPLAY_DETECTED"
+	ErrorCodePrevHashMismatch ErrorCode = "PREV_HASH_MISMATCH"
+	ErrorCodePayloadTooLarge  ErrorCode = "PAYLOAD_TOO_LARGE"
+	ErrorCodeRateLimited      ErrorCode = "RATE_LIMITED"
+	ErrorCodeInternalError    ErrorCode = "INTERNAL_ERROR"
+	ErrorCodeUnauthorized     ErrorCode = "UNAUTHORIZED"
+	ErrorCodeForbidden        ErrorCode = "FORBIDDEN"
+	ErrorCodeNotFound         ErrorCode = "NOT_FOUND"
+	ErrorCodeValidationError  ErrorCode = "VALIDATION_ERROR"
 )
 
 type ExportFormat string
@@ -110,23 +115,23 @@ type AgentKey struct {
 }
 
 type Operation struct {
-	OperationID   string `json:"operation_id"`
-	OrgID         string `json:"org_id"`
-	AgentID       string `json:"agent_id"`
-	SeqNo         int64  `json:"seq_no"`
-	OperationType string `json:"operation_type"`
-	IssuedAt      int64  `json:"issued_at"`
-	TTLMs         int64  `json:"ttl_ms"`
-	Nonce         string `json:"nonce"`
-	Subject       string `json:"subject"`
-	Action        string `json:"action"`
-	PayloadHash   string `json:"payload_hash"`
-	PrevChainHash string `json:"prev_chain_hash"`
-	ChainHash     string `json:"chain_hash"`
-	AgentPubkeyKID string `json:"agent_pubkey_kid"`
-	Signature     string `json:"signature"`
-	R2PayloadKey  *string `json:"r2_payload_key"`
-	CreatedAt     int64  `json:"created_at"`
+	OperationID    string  `json:"operation_id"`
+	OrgID          string  `json:"org_id"`
+	AgentID        string  `json:"agent_id"`
+	SeqNo          int64   `json:"seq_no"`
+	OperationType  string  `json:"operation_type"`
+	IssuedAt       int64   `json:"issued_at"`
+	TTLMs          int64   `json:"ttl_ms"`
+	Nonce          string  `json:"nonce"`
+	Subject        string  `json:"subject"`
+	Action         string  `json:"action"`
+	PayloadHash    string  `json:"payload_hash"`
+	PrevChainHash  string  `json:"prev_chain_hash"`
+	ChainHash      string  `json:"chain_hash"`
+	AgentPubkeyKID string  `json:"agent_pubkey_kid"`
+	Signature      string  `json:"signature"`
+	R2PayloadKey   *string `json:"r2_payload_key"`
+	CreatedAt      int64   `json:"created_at"`
 }
 
 type Receipt struct {
@@ -183,36 +188,36 @@ type Export struct {
 
 // EOR is the Elydora Operation Record — the fundamental unit of auditable activity.
 type EOR struct {
-	OpVersion     string      `json:"op_version"`
-	OperationID   string      `json:"operation_id"`
-	OrgID         string      `json:"org_id"`
-	AgentID       string      `json:"agent_id"`
-	IssuedAt      int64       `json:"issued_at"`
-	TTLMs         int64       `json:"ttl_ms"`
-	Nonce         string      `json:"nonce"`
-	OperationType string      `json:"operation_type"`
-	Subject       interface{} `json:"subject"`
-	Action        interface{} `json:"action"`
-	Payload       interface{} `json:"payload"`
-	PayloadHash   string      `json:"payload_hash"`
-	PrevChainHash string      `json:"prev_chain_hash"`
-	AgentPubkeyKID string    `json:"agent_pubkey_kid"`
-	Signature     string      `json:"signature"`
+	OpVersion      string      `json:"op_version"`
+	OperationID    string      `json:"operation_id"`
+	OrgID          string      `json:"org_id"`
+	AgentID        string      `json:"agent_id"`
+	IssuedAt       int64       `json:"issued_at"`
+	TTLMs          int64       `json:"ttl_ms"`
+	Nonce          string      `json:"nonce"`
+	OperationType  string      `json:"operation_type"`
+	Subject        interface{} `json:"subject"`
+	Action         interface{} `json:"action"`
+	Payload        interface{} `json:"payload"`
+	PayloadHash    string      `json:"payload_hash"`
+	PrevChainHash  string      `json:"prev_chain_hash"`
+	AgentPubkeyKID string      `json:"agent_pubkey_kid"`
+	Signature      string      `json:"signature"`
 }
 
 // EAR is the Elydora Acknowledgment Receipt — server-issued receipt confirming acceptance.
 type EAR struct {
-	ReceiptVersion  string `json:"receipt_version"`
-	ReceiptID       string `json:"receipt_id"`
-	OperationID     string `json:"operation_id"`
-	OrgID           string `json:"org_id"`
-	AgentID         string `json:"agent_id"`
-	ServerReceivedAt int64 `json:"server_received_at"`
-	SeqNo           int64  `json:"seq_no"`
-	ChainHash       string `json:"chain_hash"`
-	QueueMessageID  string `json:"queue_message_id"`
-	ReceiptHash     string `json:"receipt_hash"`
-	ElydoraKID      string `json:"elydora_kid"`
+	ReceiptVersion   string `json:"receipt_version"`
+	ReceiptID        string `json:"receipt_id"`
+	OperationID      string `json:"operation_id"`
+	OrgID            string `json:"org_id"`
+	AgentID          string `json:"agent_id"`
+	ServerReceivedAt int64  `json:"server_received_at"`
+	SeqNo            int64  `json:"seq_no"`
+	ChainHash        string `json:"chain_hash"`
+	QueueMessageID   string `json:"queue_message_id"`
+	ReceiptHash      string `json:"receipt_hash"`
+	ElydoraKID       string `json:"elydora_kid"`
 	ElydoraSignature string `json:"elydora_signature"`
 }
 
@@ -230,6 +235,7 @@ type RegisterAgentRequest struct {
 	AgentID           string                  `json:"agent_id"`
 	DisplayName       string                  `json:"display_name,omitempty"`
 	ResponsibleEntity string                  `json:"responsible_entity,omitempty"`
+	IntegrationType   IntegrationType         `json:"integration_type"`
 	Keys              []RegisterAgentKeyInput `json:"keys"`
 }
 
@@ -353,9 +359,9 @@ type GetEpochResponse struct {
 }
 
 type EpochAnchor struct {
-	TSAToken   string  `json:"tsa_token,omitempty"`
-	TSAUrl     string  `json:"tsa_url,omitempty"`
-	AnchoredAt *int64  `json:"anchored_at,omitempty"`
+	TSAToken   string `json:"tsa_token,omitempty"`
+	TSAUrl     string `json:"tsa_url,omitempty"`
+	AnchoredAt *int64 `json:"anchored_at,omitempty"`
 }
 
 type ListEpochsResponse struct {
@@ -375,7 +381,7 @@ type CreateExportResponse struct {
 }
 
 type GetExportResponse struct {
-	Export      Export  `json:"export"`
+	Export      Export `json:"export"`
 	DownloadURL string `json:"download_url,omitempty"`
 }
 

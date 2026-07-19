@@ -106,6 +106,7 @@ func TestSDKCompatibilityAgainstLatestAPI(t *testing.T) {
 		AgentID:           agentID,
 		DisplayName:       "Go SDK Compat Agent",
 		ResponsibleEntity: "sdk-matrix",
+		IntegrationType:   elydora.IntegrationTypeSDK,
 		Keys: []elydora.RegisterAgentKeyInput{
 			{
 				KID:       kid,
