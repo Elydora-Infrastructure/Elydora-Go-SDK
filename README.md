@@ -63,6 +63,8 @@ func main() {
 
 The SDK includes a CLI for installing audit hooks into AI coding agents.
 
+Agent IDs map to one physical directory directly under `~/.elydora`; path separators, traversal segments, Windows reserved names, and symbolic-link directories are rejected.
+
 ```bash
 go install github.com/Elydora-Infrastructure/Elydora-Go-SDK/cmd/elydora@latest
 
