@@ -26,6 +26,7 @@ This repository owns the public Go SDK, the `cmd/elydora` CLI, local signing beh
 - Preserve Kimi TOML comments and unrelated formatting through range-based edits, then parse the complete rendered document before writing it.
 - Keep Grok Build writes inside its native global `$GROK_HOME/hooks/*.json` contract. Treat Claude Code and Cursor compatibility files plus project `.grok/hooks` as read-only integration sources.
 - Write Auggie hooks only to `~/.augment/settings.json`; keep system and workspace settings read-only. Generate `.cmd` wrappers on Windows and `.sh` wrappers on Unix because Auggie dispatches supported script paths, and express hook timeouts in milliseconds.
+- Write Cline hooks only to `$CLINE_DIR/hooks` with `~/.cline/hooks` as the default; keep Documents and workspace hook roots read-only. Preserve official input byte-for-byte and translate guard exit code `2` into Cline's JSON stdout cancellation control.
 
 ## Code Quality
 
