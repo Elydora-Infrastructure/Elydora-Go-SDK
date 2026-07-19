@@ -25,6 +25,7 @@ This repository owns the public Go SDK, the `cmd/elydora` CLI, local signing beh
 - Select Kimi Code and legacy `kimi-cli` contracts from runtime evidence. An empty `KIMI_CODE_HOME` uses `~/.kimi-code`; create no cross-runtime migration marker.
 - Preserve Kimi TOML comments and unrelated formatting through range-based edits, then parse the complete rendered document before writing it.
 - Keep Grok Build writes inside its native global `$GROK_HOME/hooks/*.json` contract. Treat Claude Code and Cursor compatibility files plus project `.grok/hooks` as read-only integration sources.
+- Write Auggie hooks only to `~/.augment/settings.json`; keep system and workspace settings read-only. Generate `.cmd` wrappers on Windows and `.sh` wrappers on Unix because Auggie dispatches supported script paths, and express hook timeouts in milliseconds.
 
 ## Code Quality
 
