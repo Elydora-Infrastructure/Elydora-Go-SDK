@@ -41,6 +41,9 @@ This repository owns the public Go SDK, the `cmd/elydora` CLI, local signing beh
 - Use documented defaults only for genuinely optional configuration.
 - Avoid compatibility shims without a named public or user configuration contract.
 - Resolve every agent runtime directory as one physical child of `~/.elydora`; reject separators, traversal segments, cross-platform reserved names, symbolic-link directories, and linked identity configs before writes or recursive removal. Validate stored directory identity before changing host CLI configuration, and require an explicit agent ID when discovery is ambiguous.
+- Accept CLI install credentials through terminal-echo-disabled input or physical owner-only credential files. Keep credentials out of process arguments, reject legacy secret options with redacted errors, and require one UTF-8 line of at most 64 KiB.
+- Commit runtime config, private key, and audit script through one rollback-capable transaction. Persist the signing key once with mode `0600`; generated runtimes validate physical identity, size, and Unix permissions before reading config or key material.
+- Write the guard runtime through a flushed same-directory temporary file followed by atomic replacement. Surface permission, close, synchronization, commit, cleanup, and recovery failures.
 
 ## Verification
 
