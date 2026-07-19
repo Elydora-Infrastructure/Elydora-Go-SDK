@@ -29,6 +29,8 @@ This repository owns the public Go SDK, the `cmd/elydora` CLI, local signing beh
 - Write Cline hooks only to `$CLINE_DIR/hooks` with `~/.cline/hooks` as the default; keep Documents and workspace hook roots read-only. Preserve official input byte-for-byte and translate guard exit code `2` into Cline's JSON stdout cancellation control.
 - Factory Droid `droid@0.175.0` reads direct event maps from `~/.factory/hooks.json` or the legacy `~/.factory/hooks/hooks.json`; `~/.factory/settings.json` stores the same map under `hooks`. Select the active source per event, preserve JSONC syntax, and direct users to `/hooks` for review.
 - Commit Factory Droid runtime config, private key, audit runtime, and affected hook documents in one rollback-capable transaction. Status requires an enabled `PreToolUse`/`PostToolUse` pair with matching managed runtime files.
+- Qwen Code `0.20.0` loads user hooks from `$QWEN_HOME/settings.json` with `~/.qwen/settings.json` as the default; follow Qwen's `.env` precedence and keep workspace settings read-only. Preserve comments, reject trailing commas and duplicate keys, express timeouts in milliseconds, and direct users to `/hooks` for review.
+- Commit Qwen Code runtime config, private key, audit runtime, and user settings in one rollback-capable transaction. Status requires enabled `PreToolUse` and `PostToolUse` hooks with matching managed runtime files.
 
 ## Code Quality
 
