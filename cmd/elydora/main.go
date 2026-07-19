@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -146,37 +145,13 @@ func cmdUninstall(args []string) {
 		os.Exit(1)
 	}
 
-	runtimeRoot, err := plugins.AgentRuntimeRoot()
+	resolvedAgentID, agentDirectory, agentDirectoryExists, err := resolveAgentRuntimeForUninstall(*agent, *agentID)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
-	if _, err := plugins.RequirePhysicalDirectory(runtimeRoot); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Resolve agentID: if not given, scan ~/.elydora/*/config.json for matching agent_name
-	resolvedAgentID := *agentID
 	if resolvedAgentID == "" {
-		resolvedAgentID, err = findAgentIDByName(*agent)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
-		}
-		if resolvedAgentID == "" {
-			fmt.Fprintf(os.Stderr, "Error: could not find agent ID for %q in ~/.elydora/*/config.json; pass --agent-id explicitly\n", *agent)
-			os.Exit(1)
-		}
-	}
-	agentDirectory, err := plugins.ResolveAgentRuntimeDirectory(resolvedAgentID)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
-	}
-	agentDirectoryExists, err := plugins.RequirePhysicalDirectory(agentDirectory)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error: could not find agent ID for %q in ~/.elydora/*/config.json; pass --agent-id explicitly\n", *agent)
 		os.Exit(1)
 	}
 
@@ -193,64 +168,6 @@ func cmdUninstall(args []string) {
 		}
 		fmt.Printf("  Removed agent directory: %s\n", agentDirectory)
 	}
-}
-
-// findAgentIDByName scans ~/.elydora/*/config.json for a config whose agent_name
-// matches the given name and returns the directory name (agent ID).
-func findAgentIDByName(agentName string) (string, error) {
-	elydoraDir, err := plugins.AgentRuntimeRoot()
-	if err != nil {
-		return "", err
-	}
-	exists, err := plugins.RequirePhysicalDirectory(elydoraDir)
-	if err != nil {
-		return "", err
-	}
-	if !exists {
-		return "", nil
-	}
-	entries, err := os.ReadDir(elydoraDir)
-	if err != nil {
-		return "", fmt.Errorf("read Elydora runtime root %s: %w", elydoraDir, err)
-	}
-	foundAgentID := ""
-	for _, entry := range entries {
-		if entry.Type()&os.ModeSymlink != 0 || !entry.IsDir() {
-			continue
-		}
-		configPath := filepath.Join(elydoraDir, entry.Name(), "config.json")
-		data, err := os.ReadFile(configPath)
-		if os.IsNotExist(err) {
-			continue
-		}
-		if err != nil {
-			return "", fmt.Errorf("read agent config %s: %w", configPath, err)
-		}
-		var config map[string]interface{}
-		if err := json.Unmarshal(data, &config); err != nil {
-			return "", fmt.Errorf("parse agent config %s: %w", configPath, err)
-		}
-		if name, _ := config["agent_name"].(string); name == agentName {
-			storedAgentID, ok := config["agent_id"].(string)
-			if !ok || storedAgentID == "" {
-				return "", fmt.Errorf("agent config %s has an invalid agent_id", configPath)
-			}
-			if storedAgentID != entry.Name() {
-				return "", fmt.Errorf("agent config %s crosses its runtime directory", configPath)
-			}
-			if _, err := plugins.ResolveAgentRuntimeDirectory(storedAgentID); err != nil {
-				return "", fmt.Errorf("validate agent config %s: %w", configPath, err)
-			}
-			if foundAgentID != "" {
-				return "", fmt.Errorf(
-					"multiple %q agent runtimes found; pass --agent-id explicitly",
-					agentName,
-				)
-			}
-			foundAgentID = storedAgentID
-		}
-	}
-	return foundAgentID, nil
 }
 
 // ---------------------------------------------------------------------------

@@ -78,3 +78,59 @@ func TestFindAgentIDByNameRejectsAmbiguousRuntimes(t *testing.T) {
 		t.Fatalf("findAgentIDByName() error = %v", err)
 	}
 }
+
+func TestExplicitUninstallRejectsAgentOwnershipMismatch(t *testing.T) {
+	home := setMainTestHome(t)
+	runtimeDirectory := filepath.Join(home, ".elydora", "agent-1")
+	if err := os.MkdirAll(runtimeDirectory, 0700); err != nil {
+		t.Fatalf("MkdirAll() error = %v", err)
+	}
+	config := []byte(`{"agent_name":"codex","agent_id":"agent-1"}`)
+	if err := os.WriteFile(filepath.Join(runtimeDirectory, "config.json"), config, 0600); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+
+	_, _, _, err := resolveAgentRuntimeForUninstall("opencode", "agent-1")
+	if err == nil || !strings.Contains(err.Error(), "belongs to") {
+		t.Fatalf("resolveAgentRuntimeForUninstall() error = %v", err)
+	}
+}
+
+func TestFindAgentIDByNameRejectsLinkedRuntime(t *testing.T) {
+	home := setMainTestHome(t)
+	root := filepath.Join(home, ".elydora")
+	if err := os.MkdirAll(root, 0700); err != nil {
+		t.Fatalf("MkdirAll() error = %v", err)
+	}
+	target := t.TempDir()
+	link := filepath.Join(root, "agent-1")
+	if err := os.Symlink(target, link); err != nil {
+		t.Skipf("directory symbolic links unavailable: %v", err)
+	}
+
+	_, err := findAgentIDByName("opencode")
+	if err == nil || !strings.Contains(err.Error(), "physical directory") {
+		t.Fatalf("findAgentIDByName() error = %v", err)
+	}
+}
+
+func TestFindAgentIDByNameRejectsLinkedConfig(t *testing.T) {
+	home := setMainTestHome(t)
+	runtimeDirectory := filepath.Join(home, ".elydora", "agent-1")
+	if err := os.MkdirAll(runtimeDirectory, 0700); err != nil {
+		t.Fatalf("MkdirAll() error = %v", err)
+	}
+	target := filepath.Join(t.TempDir(), "config.json")
+	config := []byte(`{"agent_name":"opencode","agent_id":"agent-1"}`)
+	if err := os.WriteFile(target, config, 0600); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+	if err := os.Symlink(target, filepath.Join(runtimeDirectory, "config.json")); err != nil {
+		t.Skipf("file symbolic links unavailable: %v", err)
+	}
+
+	_, err := findAgentIDByName("opencode")
+	if err == nil || !strings.Contains(err.Error(), "physical file") {
+		t.Fatalf("findAgentIDByName() error = %v", err)
+	}
+}

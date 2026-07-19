@@ -40,7 +40,7 @@ This repository owns the public Go SDK, the `cmd/elydora` CLI, local signing beh
 - Return unexpected errors to the CLI boundary with operation and path context.
 - Use documented defaults only for genuinely optional configuration.
 - Avoid compatibility shims without a named public or user configuration contract.
-- Resolve every agent runtime directory as one physical child of `~/.elydora`; reject separators, traversal segments, cross-platform reserved names, and symbolic-link directories before writes or recursive removal.
+- Resolve every agent runtime directory as one physical child of `~/.elydora`; reject separators, traversal segments, cross-platform reserved names, symbolic-link directories, and linked identity configs before writes or recursive removal. Validate stored directory identity before changing host CLI configuration, and require an explicit agent ID when discovery is ambiguous.
 
 ## Verification
 

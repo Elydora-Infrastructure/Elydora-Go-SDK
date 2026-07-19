@@ -93,3 +93,19 @@ func TestResolveAgentRuntimeDirectoryRejectsSymlinkChild(t *testing.T) {
 		t.Fatalf("ResolveAgentRuntimeDirectory() error = %v", err)
 	}
 }
+
+func TestRequirePhysicalFileRejectsSymlink(t *testing.T) {
+	setRuntimeTestHome(t)
+	target := filepath.Join(t.TempDir(), "target.json")
+	if err := os.WriteFile(target, []byte("{}"), 0600); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+	link := filepath.Join(t.TempDir(), "config.json")
+	if err := os.Symlink(target, link); err != nil {
+		t.Skipf("file symbolic links unavailable: %v", err)
+	}
+	_, err := RequirePhysicalFile(link)
+	if err == nil || !strings.Contains(err.Error(), "physical file") {
+		t.Fatalf("RequirePhysicalFile() error = %v", err)
+	}
+}

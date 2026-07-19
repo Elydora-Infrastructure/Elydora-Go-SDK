@@ -126,3 +126,18 @@ func RequirePhysicalDirectory(path string) (bool, error) {
 	}
 	return true, nil
 }
+
+// RequirePhysicalFile reports whether a path is an existing physical regular file.
+func RequirePhysicalFile(path string) (bool, error) {
+	info, err := os.Lstat(path)
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("inspect agent runtime file %s: %w", path, err)
+	}
+	if info.Mode()&os.ModeSymlink != 0 || !info.Mode().IsRegular() {
+		return false, fmt.Errorf("agent runtime config is not a physical file: %s", path)
+	}
+	return true, nil
+}
