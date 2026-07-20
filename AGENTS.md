@@ -21,6 +21,7 @@ This repository owns the public Go SDK, the `cmd/elydora` CLI, local signing beh
 - Forward official hook JSON from STDIN without reshaping provider fields.
 - Use the provider's documented blocking mechanism. Command-hook providers that define exit code `2` must receive exit code `2` from the freeze guard.
 - Report installation as healthy only when a complete hook contract references both generated runtime scripts and both scripts exist.
+- Write Cursor hooks only to `~/.cursor/hooks.json`; keep project and enterprise sources read-only. Preserve user hooks, migrate the prior versionless Elydora contract, audit successful and failed tool calls, emit valid native JSON responses, retain PowerShell exit codes, and commit guard, runtime metadata, private key, audit runtime, and user hooks in one rollback-capable transaction.
 - Model stable, legacy, and early-access hook generations as explicit contracts. Keep their activation requirements visible in CLI output and README guidance.
 - Select Kimi Code and legacy `kimi-cli` contracts from runtime evidence. An empty `KIMI_CODE_HOME` uses `~/.kimi-code`; create no cross-runtime migration marker.
 - Preserve Kimi TOML comments and unrelated formatting through range-based edits, then parse the complete rendered document before writing it.
