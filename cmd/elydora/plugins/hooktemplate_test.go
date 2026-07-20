@@ -61,6 +61,7 @@ func runGuard(t *testing.T, scriptPath string, homeDir string) (int, string) {
 	}
 	cmd := exec.Command(nodeBinary, scriptPath)
 	cmd.Env = append(os.Environ(), "HOME="+homeDir, "USERPROFILE="+homeDir)
+	cmd.Stdin = strings.NewReader("{}")
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	err = cmd.Run()
@@ -100,7 +101,7 @@ func TestGuardAllowsActiveAgent(t *testing.T) {
 	}
 }
 
-func TestGuardBlocksCachedFrozenAgent(t *testing.T) {
+func TestGuardRejectsFutureCachedStatus(t *testing.T) {
 	scriptPath, homeDir, server := writeGuardFixture(t, "active")
 	defer server.Close()
 
@@ -118,10 +119,10 @@ func TestGuardBlocksCachedFrozenAgent(t *testing.T) {
 	}
 
 	exitCode, stderr := runGuard(t, scriptPath, homeDir)
-	if exitCode != 2 {
-		t.Fatalf("exit code = %d, want 2; stderr = %q", exitCode, stderr)
+	if exitCode != 0 {
+		t.Fatalf("exit code = %d, want 0; stderr = %q", exitCode, stderr)
 	}
-	if !strings.Contains(stderr, "Tool execution blocked") {
-		t.Fatalf("stderr = %q, want blocking message", stderr)
+	if !strings.Contains(stderr, "timestamp is in the future") {
+		t.Fatalf("stderr = %q, want future timestamp diagnostic", stderr)
 	}
 }

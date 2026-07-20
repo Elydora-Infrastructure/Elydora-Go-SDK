@@ -21,6 +21,7 @@ This repository owns the public Go SDK, the `cmd/elydora` CLI, local signing beh
 - Forward official hook JSON from STDIN without reshaping provider fields.
 - Use the provider's documented blocking mechanism. Command-hook providers that define exit code `2` must receive exit code `2` from the freeze guard.
 - Report installation as healthy only when a complete hook contract references both generated runtime scripts and both scripts exist.
+- Resolve Codex user hooks through `$CODEX_HOME/hooks.json` with `~/.codex/hooks.json` as the default and canonicalize configured existing directories. Preserve additive TOML, project, plugin, and managed sources. Register exact `PreToolUse` and `PostToolUse` match-all command groups, retain the native payload, propagate freeze and revocation through exit code `2`, keep guard lookup and audit delivery fail-open with observable errors, and commit user hooks plus all four runtime artifacts through one rollback-capable transaction. Require `/hooks` approval for both definition hashes.
 - Write Cursor hooks only to `~/.cursor/hooks.json`; keep project and enterprise sources read-only. Preserve user hooks, migrate the prior versionless Elydora contract, audit successful and failed tool calls, emit valid native JSON responses, retain PowerShell exit codes, and commit guard, runtime metadata, private key, audit runtime, and user hooks in one rollback-capable transaction.
 - Model stable, legacy, and early-access hook generations as explicit contracts. Keep their activation requirements visible in CLI output and README guidance.
 - Select Kimi Code and legacy `kimi-cli` contracts from runtime evidence. An empty `KIMI_CODE_HOME` uses `~/.kimi-code`; create no cross-runtime migration marker.
@@ -46,6 +47,7 @@ This repository owns the public Go SDK, the `cmd/elydora` CLI, local signing beh
 - Accept CLI install credentials through terminal-echo-disabled input or physical owner-only credential files. Keep credentials out of process arguments, reject legacy secret options with redacted errors, and require one UTF-8 line of at most 64 KiB.
 - Commit runtime config, private key, and audit script through one rollback-capable transaction. Persist the signing key once with mode `0600`; generated runtimes validate physical identity, size, and Unix permissions before reading config or key material.
 - Write the guard runtime through a flushed same-directory temporary file followed by atomic replacement. Surface permission, close, synchronization, commit, cleanup, and recovery failures.
+- Read status cache, chain state, and error logs through physical descriptors with identity checks. Write cache and validated chain state atomically, and append error logs through no-follow owner-only descriptors. Preserve rollback artifacts when recovery cannot safely restore an original file and include the recovery path in the surfaced error.
 
 ## Verification
 
