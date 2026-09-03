@@ -22,8 +22,7 @@ type agentRuntimeConfig struct {
 	AgentName string `json:"agent_name"`
 }
 
-// WriteRuntimeFileAtomic replaces one managed runtime file through a flushed,
-// same-directory temporary file.
+// WriteRuntimeFileAtomic replaces one managed runtime file atomically.
 func WriteRuntimeFileAtomic(
 	path string,
 	label string,
@@ -40,8 +39,7 @@ func WriteRuntimeFileAtomic(
 	return writeChanges([]*fileChange{change}, "write "+label, nil)
 }
 
-// GenerateHookScript atomically commits the agent config, private key, and
-// self-contained Node.js audit runtime.
+// GenerateHookScript commits the config, private key, and audit runtime together.
 func GenerateHookScript(destPath string, config InstallConfig) error {
 	return generateHookScriptWithRename(destPath, config, nil)
 }

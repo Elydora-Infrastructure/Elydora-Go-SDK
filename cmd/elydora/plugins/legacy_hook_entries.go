@@ -2,8 +2,7 @@ package plugins
 
 import "strings"
 
-// extractElydoraScriptPath supports adapters that still use the legacy shared
-// command-hook shape. Provider-specific adapters should define exact ownership.
+// extractElydoraScriptPath reads the legacy shared command-hook shape.
 func extractElydoraScriptPath(hookArray any) string {
 	entries, _ := hookArray.([]any)
 	for _, entry := range entries {

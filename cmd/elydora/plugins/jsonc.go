@@ -17,15 +17,6 @@ type jsoncEditor struct {
 	label  string
 }
 
-func standardizeJSONC(source []byte, label string, allowTrailingCommas bool) ([]byte, error) {
-	value, err := parseJSONC(source, label, allowTrailingCommas)
-	if err != nil {
-		return nil, err
-	}
-	value.Standardize()
-	return value.Pack(), nil
-}
-
 func parseJSONC(source []byte, label string, allowTrailingCommas bool) (hujson.Value, error) {
 	value, err := hujson.Parse(source)
 	if err != nil {

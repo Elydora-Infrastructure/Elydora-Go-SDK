@@ -5,22 +5,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
-// expandHome replaces a leading ~ with the user's home directory.
-func expandHome(p string) (string, error) {
-	if !strings.HasPrefix(p, "~") {
-		return p, nil
-	}
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("resolve home directory: %w", err)
-	}
-	return filepath.Join(home, p[1:]), nil
-}
-
-// readJSONFile reads a JSON file into a map. Returns an empty map if the file does not exist.
+// readJSONFile reads a JSON object; a missing file yields an empty map.
 func readJSONFile(path string) (map[string]interface{}, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -53,7 +40,7 @@ func writeJSONFile(path string, data map[string]interface{}) error {
 	return nil
 }
 
-// hookScriptPath returns the default path for the hook script inside ~/.elydora/<agentId>/.
+// hookScriptPath returns ~/.elydora/<agentId>/hook.js.
 func hookScriptPath(agentId string) (string, error) {
 	agentDirectory, err := ResolveAgentRuntimeDirectory(agentId)
 	if err != nil {
@@ -62,7 +49,7 @@ func hookScriptPath(agentId string) (string, error) {
 	return filepath.Join(agentDirectory, "hook.js"), nil
 }
 
-// guardScriptPath returns the default path for the guard script inside ~/.elydora/<agentId>/.
+// guardScriptPath returns ~/.elydora/<agentId>/guard.js.
 func guardScriptPath(agentId string) (string, error) {
 	agentDirectory, err := ResolveAgentRuntimeDirectory(agentId)
 	if err != nil {

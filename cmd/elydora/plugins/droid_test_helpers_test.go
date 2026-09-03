@@ -344,3 +344,12 @@ func requireNoDroidStagingFiles(t *testing.T, root string) {
 		t.Fatalf("walk staging files: %v", err)
 	}
 }
+
+func standardizeJSONC(source []byte, label string, allowTrailingCommas bool) ([]byte, error) {
+	value, err := parseJSONC(source, label, allowTrailingCommas)
+	if err != nil {
+		return nil, err
+	}
+	value.Standardize()
+	return value.Pack(), nil
+}
