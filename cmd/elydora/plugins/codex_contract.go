@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"sort"
-	"strings"
 )
 
 const (
@@ -20,7 +18,6 @@ const (
 	codexOwnedDescription   = "Elydora audit and freeze enforcement"
 	codexGuardStatusMessage = "Checking Elydora agent state"
 	codexAuditStatusMessage = "Recording Elydora tool use"
-	codexPOSIXApostrophe    = `'"'"'`
 )
 
 type codexHooks map[string][]map[string]any
@@ -40,11 +37,7 @@ type codexRenderedDocument struct {
 	remove   bool
 }
 
-type codexRuntimeContract struct {
-	agentID   string
-	guardPath string
-	auditPath string
-}
+type codexRuntimeContract = managedRuntimeContract
 
 func cloneCodexObject(value map[string]any) map[string]any {
 	clone := make(map[string]any, len(value))
@@ -60,28 +53,6 @@ func cloneCodexHooks(source codexHooks) codexHooks {
 		clone[event] = append([]map[string]any(nil), groups...)
 	}
 	return clone
-}
-
-func sameCodexPath(left, right string) bool {
-	left = filepath.Clean(left)
-	right = filepath.Clean(right)
-	if absolute, err := filepath.Abs(left); err == nil {
-		left = absolute
-	}
-	if absolute, err := filepath.Abs(right); err == nil {
-		right = absolute
-	}
-	if runtime.GOOS == "windows" {
-		return strings.EqualFold(left, right)
-	}
-	return left == right
-}
-
-func sameCodexAgentID(left, right string) bool {
-	if runtime.GOOS == "windows" {
-		return strings.EqualFold(left, right)
-	}
-	return left == right
 }
 
 func readCodexHooks(value any, label string) (codexHooks, error) {
@@ -124,16 +95,6 @@ func readCodexHooks(value any, label string) (codexHooks, error) {
 		hooks[event] = groups
 	}
 	return hooks, nil
-}
-
-func decodeStrictJSONObject(source []byte, label string) (map[string]any, error) {
-	if !json.Valid(source) {
-		var value any
-		if err := json.Unmarshal(source, &value); err != nil {
-			return nil, fmt.Errorf("parse %s: %w", label, err)
-		}
-	}
-	return decodeJSONCObject(source, label, false)
 }
 
 func parseCodexDocument(filePath string, raw []byte) (*codexDocument, error) {
@@ -180,7 +141,7 @@ func removeCodexGroups(
 		for _, value := range handlers {
 			handler := value.(map[string]any)
 			managedID, managed := codexManagedAgentID(handler, scriptName, status)
-			if managed && (agentID == "" || sameCodexAgentID(managedID, agentID)) {
+			if managed && (agentID == "" || sameManagedAgentID(managedID, agentID)) {
 				continue
 			}
 			kept = append(kept, handler)
@@ -295,11 +256,7 @@ func managedCodexIDs(
 			if !managed {
 				continue
 			}
-			key := agentID
-			if runtime.GOOS == "windows" {
-				key = strings.ToLower(agentID)
-			}
-			result[key] = agentID
+			result[managedReferenceKey(agentID)] = agentID
 		}
 	}
 	return result

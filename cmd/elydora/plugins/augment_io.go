@@ -211,7 +211,7 @@ func resolveAugmentWrapperPaths(agentDirectory string) augmentWrapperPaths {
 }
 
 func requireAugmentAbsoluteNode(nodePath string) error {
-	if !filepath.IsAbs(nodePath) || !isClaudeNodeExecutable(nodePath) {
+	if !filepath.IsAbs(nodePath) || !isNodeExecutable(nodePath) {
 		return fmt.Errorf("Auggie hooks require an absolute Node.js executable path")
 	}
 	return nil

@@ -77,11 +77,7 @@ type claudeRenderedDocument struct {
 	remove   bool
 }
 
-type claudeRuntimeContract struct {
-	agentID   string
-	guardPath string
-	auditPath string
-}
+type claudeRuntimeContract = managedRuntimeContract
 
 func cloneClaudeObject(value map[string]any) map[string]any {
 	clone := make(map[string]any, len(value))

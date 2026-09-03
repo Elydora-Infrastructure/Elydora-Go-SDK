@@ -48,16 +48,16 @@ func buildKiroIdeCommand(runtimePath, scriptPath string) (string, error) {
 		)
 	}
 	if runtime.GOOS == "windows" {
-		return codexWindowsCommand(runtimePath, scriptPath), nil
+		return encodedWindowsCommand(runtimePath, scriptPath), nil
 	}
 	return quotePOSIXArgument(runtimePath) + " " + quotePOSIXArgument(scriptPath), nil
 }
 
 func parseKiroIdeCommand(command string) (string, string, bool) {
 	if runtime.GOOS == "windows" {
-		return parseCodexWindowsCommand(command)
+		return parseEncodedWindowsCommand(command)
 	}
-	return parseCodexPOSIXCommand(command)
+	return parsePOSIXCommand(command)
 }
 
 func kiroIdeRuntimeReferenceForCommand(
@@ -66,7 +66,7 @@ func kiroIdeRuntimeReferenceForCommand(
 ) (*kiroIdeRuntimeReference, error) {
 	runtimePath, scriptPath, ok := parseKiroIdeCommand(command)
 	if !ok || !filepath.IsAbs(runtimePath) || !filepath.IsAbs(scriptPath) ||
-		!isCodexNodeExecutable(runtimePath) ||
+		!isNodeExecutable(runtimePath) ||
 		!sameKiroIdeFileName(filepath.Base(scriptPath), scriptName) {
 		return nil, nil
 	}

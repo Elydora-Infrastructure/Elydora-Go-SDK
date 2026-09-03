@@ -331,7 +331,7 @@ func TestKiroIdeStatusRejectsStaleWindowsPowerShellLauncher(t *testing.T) {
 	command := action["command"].(string)
 	action["command"] = strings.Replace(
 		command,
-		codexPowerShellPath(),
+		windowsPowerShellPath(),
 		`C:\StaleWindows\System32\WindowsPowerShell\v1.0\powershell.exe`,
 		1,
 	)

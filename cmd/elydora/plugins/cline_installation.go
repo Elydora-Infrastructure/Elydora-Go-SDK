@@ -109,7 +109,7 @@ func preflightClineInstallation(
 	if err != nil {
 		return nil, err
 	}
-	if !filepath.IsAbs(nodePath) || !isClaudeNodeExecutable(nodePath) {
+	if !filepath.IsAbs(nodePath) || !isNodeExecutable(nodePath) {
 		return nil, fmt.Errorf("Cline hooks require an absolute Node.js executable path")
 	}
 	return paths, nil

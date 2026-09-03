@@ -219,4 +219,3 @@ func (p *LettaPlugin) Status() (PluginStatus, error) {
 	status.Installed = status.HookConfigured && status.HookScriptExists
 	return status, nil
 }
-

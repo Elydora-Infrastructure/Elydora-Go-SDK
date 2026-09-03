@@ -88,6 +88,16 @@ func rejectDuplicateJSONCKeys(value *hujson.Value, label, location string) error
 	return nil
 }
 
+func decodeStrictJSONObject(source []byte, label string) (map[string]any, error) {
+	if !json.Valid(source) {
+		var value any
+		if err := json.Unmarshal(source, &value); err != nil {
+			return nil, fmt.Errorf("parse %s: %w", label, err)
+		}
+	}
+	return decodeJSONCObject(source, label, false)
+}
+
 func decodeJSONCObject(source []byte, label string, allowTrailingCommas bool) (map[string]any, error) {
 	value, err := parseJSONC(source, label, allowTrailingCommas)
 	if err != nil {

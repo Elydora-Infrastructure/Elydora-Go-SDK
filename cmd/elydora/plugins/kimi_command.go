@@ -39,7 +39,7 @@ func buildKimiCommand(runtimePath, scriptPath string) (string, error) {
 		return "", fmt.Errorf("kimi hook commands require absolute runtime and script paths")
 	}
 	if runtime.GOOS == "windows" {
-		return codexWindowsCommand(runtimePath, scriptPath), nil
+		return encodedWindowsCommand(runtimePath, scriptPath), nil
 	}
 	return quotePOSIXArgument(runtimePath) + " " + quotePOSIXArgument(scriptPath), nil
 }
@@ -80,10 +80,10 @@ func parseKimiLegacyWindowsCommand(command string) (string, string, bool) {
 }
 
 func parseKimiCommand(command string) (string, string, bool) {
-	if runtimePath, scriptPath, ok := parseCodexPOSIXCommand(command); ok {
+	if runtimePath, scriptPath, ok := parsePOSIXCommand(command); ok {
 		return runtimePath, scriptPath, true
 	}
-	if runtimePath, scriptPath, ok := parseCodexWindowsCommand(command); ok {
+	if runtimePath, scriptPath, ok := parseEncodedWindowsCommand(command); ok {
 		return runtimePath, scriptPath, true
 	}
 	return parseKimiLegacyWindowsCommand(command)
