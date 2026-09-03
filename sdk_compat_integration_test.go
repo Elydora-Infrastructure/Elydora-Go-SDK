@@ -81,8 +81,8 @@ func TestSDKCompatibilityAgainstLatestAPI(t *testing.T) {
 	if err != nil {
 		t.Fatalf("api token auth failed: %v", err)
 	}
-	if meWithAPI.User.OrgID != login.User.OrgID {
-		t.Fatalf("api token org mismatch: got %s want %s", meWithAPI.User.OrgID, login.User.OrgID)
+	if orgID(meWithAPI.User.OrgID) != login.User.OrgID {
+		t.Fatalf("api token org mismatch: got %s want %s", orgID(meWithAPI.User.OrgID), login.User.OrgID)
 	}
 
 	rotateResp, err := client.RotateApiToken()
@@ -98,8 +98,8 @@ func TestSDKCompatibilityAgainstLatestAPI(t *testing.T) {
 	if err != nil {
 		t.Fatalf("rotated token auth failed: %v", err)
 	}
-	if meWithRotated.User.OrgID != login.User.OrgID {
-		t.Fatalf("rotated token org mismatch: got %s want %s", meWithRotated.User.OrgID, login.User.OrgID)
+	if orgID(meWithRotated.User.OrgID) != login.User.OrgID {
+		t.Fatalf("rotated token org mismatch: got %s want %s", orgID(meWithRotated.User.OrgID), login.User.OrgID)
 	}
 
 	_, err = client.RegisterAgent(&elydora.RegisterAgentRequest{
@@ -153,4 +153,11 @@ func TestSDKCompatibilityAgainstLatestAPI(t *testing.T) {
 	if !verify.Valid {
 		t.Fatalf("verify operation invalid: %+v", verify)
 	}
+}
+
+func orgID(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
 }

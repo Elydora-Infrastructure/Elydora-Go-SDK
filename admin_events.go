@@ -2,8 +2,7 @@ package elydora
 
 import "fmt"
 
-// ListAdminEvents retrieves recent administrative events for the organization.
-// An optional limit (1–100) may be provided; pass 0 to use the server default (20).
+// ListAdminEvents retrieves recent administrative events; limit 0 uses the server default.
 func (c *Client) ListAdminEvents(limit int) (*ListAdminEventsResponse, error) {
 	path := "/v1/admin/events"
 	if limit > 0 {
