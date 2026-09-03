@@ -237,7 +237,7 @@ func droidManagedGroup(t *testing.T, groupsValue any, scriptPath string) map[str
 			handler := requireDroidObject(t, handlerValue)
 			command, _ := handler["command"].(string)
 			_, configuredPath, managed := parseDroidCommand(command, true)
-			if managed && sameDroidPath(configuredPath, scriptPath) {
+			if managed && sameManagedPath(configuredPath, scriptPath) {
 				return group
 			}
 		}
@@ -253,7 +253,7 @@ func droidManagedHandler(t *testing.T, groupsValue any, scriptPath string) map[s
 		handler := requireDroidObject(t, handlerValue)
 		command, _ := handler["command"].(string)
 		_, configuredPath, managed := parseDroidCommand(command, true)
-		if managed && sameDroidPath(configuredPath, scriptPath) {
+		if managed && sameManagedPath(configuredPath, scriptPath) {
 			return handler
 		}
 	}

@@ -136,14 +136,14 @@ func resolveManagedRuntimePaths(
 	if !filepath.IsAbs(config.GuardScriptPath) ||
 		!sameManagedPath(config.GuardScriptPath, paths.guardPath) {
 		return nil, fmt.Errorf(
-			"guard runtime must use the managed Elydora agent directory: %s",
+			"Elydora guard runtime must use the managed agent directory: %s",
 			paths.guardPath,
 		)
 	}
 	if config.HookScript != "" && (!filepath.IsAbs(config.HookScript) ||
 		!sameManagedPath(config.HookScript, paths.auditPath)) {
 		return nil, fmt.Errorf(
-			"audit runtime must use the managed Elydora agent directory: %s",
+			"Elydora audit runtime must use the managed agent directory: %s",
 			paths.auditPath,
 		)
 	}

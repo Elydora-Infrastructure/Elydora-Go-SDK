@@ -342,7 +342,7 @@ func TestCursorCreatesMissingGuardAndRejectsUnmanagedRuntimePaths(t *testing.T) 
 				fixture.config.HookScript = unmanaged
 			}
 			if err := fixture.plugin.Install(fixture.config); err == nil ||
-				!strings.Contains(err.Error(), "managed Elydora agent directory") {
+				!strings.Contains(err.Error(), "managed agent directory") {
 				t.Fatalf("unmanaged %s error = %v", field, err)
 			}
 			if _, err := os.Stat(fixture.configPath); !os.IsNotExist(err) {
