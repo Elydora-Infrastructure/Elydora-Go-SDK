@@ -42,6 +42,18 @@ func extractPathFromNodeCommand(command string) string {
 	return ""
 }
 
+func withoutElydoraEntries(hookArray any) []any {
+	entries, _ := hookArray.([]any)
+	kept := make([]any, 0, len(entries))
+	for _, entry := range entries {
+		if object, ok := entry.(map[string]any); ok && isElydoraHookEntry(object) {
+			continue
+		}
+		kept = append(kept, entry)
+	}
+	return kept
+}
+
 func hasElydoraEntry(hookArray any) bool {
 	entries, _ := hookArray.([]any)
 	for _, entry := range entries {

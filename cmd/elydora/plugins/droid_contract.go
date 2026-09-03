@@ -172,53 +172,21 @@ for (const entry of entries) {
 	return nil
 }
 
-func buildDroidCommand(nodePath, scriptPath string) string {
-	if runtime.GOOS == "windows" {
-		return powerShellSource(nodePath, scriptPath)
-	}
-	return posixSource(nodePath, scriptPath)
-}
-
 func buildDroidGroup(nodePath, scriptPath string) map[string]any {
 	return map[string]any{
 		"matcher": "*",
 		"hooks": []any{map[string]any{
-			"type": "command", "command": buildDroidCommand(nodePath, scriptPath), "timeout": droidHookTimeout,
+			"type": "command", "command": buildShellCommand(nodePath, scriptPath), "timeout": droidHookTimeout,
 		}},
 	}
 }
 
 func parseDroidCommand(command string, includeLegacy ...bool) (string, string, bool) {
-	if runtime.GOOS != "windows" {
-		return parsePOSIXCommand(command)
-	}
-	executable, script, ok := parsePowerShellSource(command)
-	if ok || len(includeLegacy) == 0 || !includeLegacy[0] {
+	executable, script, ok := parseShellCommand(command)
+	if ok || runtime.GOOS != "windows" || len(includeLegacy) == 0 || !includeLegacy[0] {
 		return executable, script, ok
 	}
-	return parseDroidLegacyWindowsCommand(command)
-}
-
-func parseDroidLegacyWindowsCommand(command string) (string, string, bool) {
-	executable, next, ok := readDroidLegacyWindowsArgument(command, 0)
-	if !ok || next >= len(command) || command[next] != ' ' {
-		return "", "", false
-	}
-	script, end, ok := readDroidLegacyWindowsArgument(command, next+1)
-	return executable, script, ok && end == len(command) && executable != "" && script != ""
-}
-
-func readDroidLegacyWindowsArgument(command string, start int) (string, int, bool) {
-	if start >= len(command) || command[start] != '"' {
-		return "", start, false
-	}
-	end := strings.IndexByte(command[start+1:], '"')
-	if end < 0 {
-		return "", start, false
-	}
-	end += start + 1
-	value := command[start+1 : end]
-	return value, end + 1, value != "" && !strings.ContainsAny(value, "\r\n")
+	return parseQuotedWindowsCommand(command)
 }
 
 func managedDroidAgentID(

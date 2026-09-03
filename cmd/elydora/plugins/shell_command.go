@@ -196,3 +196,57 @@ func parseEncodedWindowsCommand(command string) (string, string, bool) {
 	}
 	return parsePowerShellSource(source)
 }
+
+func buildEncodedCommand(product, runtimePath, scriptPath string) (string, error) {
+	if !filepath.IsAbs(runtimePath) || !filepath.IsAbs(scriptPath) {
+		return "", fmt.Errorf("%s hook commands require absolute runtime and script paths", product)
+	}
+	if runtime.GOOS == "windows" {
+		return encodedWindowsCommand(runtimePath, scriptPath), nil
+	}
+	return posixSource(runtimePath, scriptPath), nil
+}
+
+func parseEncodedCommand(command string) (string, string, bool) {
+	if runtimePath, scriptPath, ok := parsePOSIXCommand(command); ok {
+		return runtimePath, scriptPath, true
+	}
+	return parseEncodedWindowsCommand(command)
+}
+
+func buildShellCommand(runtimePath, scriptPath string) string {
+	if runtime.GOOS == "windows" {
+		return powerShellSource(runtimePath, scriptPath)
+	}
+	return posixSource(runtimePath, scriptPath)
+}
+
+func parseShellCommand(command string) (string, string, bool) {
+	if runtime.GOOS == "windows" {
+		return parsePowerShellSource(command)
+	}
+	return parsePOSIXCommand(command)
+}
+
+// parseQuotedWindowsCommand reads the pre-2.1 `"node" "script"` form.
+func parseQuotedWindowsCommand(command string) (string, string, bool) {
+	runtimePath, next, ok := readQuotedWindowsArgument(command, 0)
+	if !ok || next >= len(command) || command[next] != ' ' {
+		return "", "", false
+	}
+	scriptPath, end, ok := readQuotedWindowsArgument(command, next+1)
+	return runtimePath, scriptPath, ok && end == len(command)
+}
+
+func readQuotedWindowsArgument(command string, start int) (string, int, bool) {
+	if start >= len(command) || command[start] != '"' {
+		return "", start, false
+	}
+	end := strings.IndexByte(command[start+1:], '"')
+	if end < 0 {
+		return "", start, false
+	}
+	end += start + 1
+	value := command[start+1 : end]
+	return value, end + 1, value != "" && !strings.ContainsAny(value, "\r\n")
+}
