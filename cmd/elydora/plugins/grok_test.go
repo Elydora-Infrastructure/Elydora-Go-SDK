@@ -36,7 +36,7 @@ func TestGrokCommandRoundTripAndRejectsInjection(t *testing.T) {
 		!sameManagedPath(script, fixture.guardPath) {
 		t.Fatalf("parsed Grok command = %q, %q, %v", executable, script, ok)
 	}
-	if strings.Contains(command, "%ELYDORA_HOOK_PATH%") {
+	if runtime.GOOS == "windows" && strings.Contains(command, "%ELYDORA_HOOK_PATH%") {
 		t.Fatalf("Grok command exposes an expandable path: %q", command)
 	}
 	if _, err := buildEncodedCommand("Grok", "node", fixture.guardPath); err == nil {

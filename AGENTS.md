@@ -47,6 +47,15 @@ This repository owns the public Go SDK, the `cmd/elydora` CLI, local signing beh
 - Preserve JSONC comments, line endings, and unknown future hook fields. Reject trailing commas and duplicate keys, validate all 21 current events plus command, HTTP, and prompt handlers, reject settings-defined function handlers, and apply Node.js `RegExp` semantics only to the 15 matcher-enabled events.
 - Own one exact named matchless `PreToolUse`, `PostToolUse`, and `PostToolUseFailure` triple with 10,000 millisecond timeouts. Generate guard, strict runtime config, canonical private key, and native-payload audit runtime with user settings in one rollback-capable transaction. Propagate frozen and revoked agents through exit code `2`; require effective hooks to be enabled, one exact triple, physical runtime files, strict identity, and exact generated sources for healthy status; direct users to `/hooks` for review.
 
+## Shared Modules
+
+- `cmd/elydora/plugins/managed_runtime.go` owns install-config validation, managed runtime paths, runtime config validation, runtime identity checks, and the strict and presence-only status contracts. `managed_changes.go` owns runtime config encoding, the four runtime file changes, and the shared directory-plus-commit writer.
+- `cmd/elydora/plugins/shell_command.go` owns Node.js resolution, POSIX and PowerShell quoting, encoded Windows commands, the shell and encoded command builders and parsers, and the pre-2.1 quoted Windows parser.
+- `cmd/elydora/plugins/jsonc.go` owns strict JSON object decoding, JSONC editing, and `cloneJSONObject`; `managed_files.go` owns physical file and directory inspection; `transaction*.go` owns the rollback-capable commit.
+- Provider files keep only their hook document schema, ownership rules, rendering, and provider-specific preconditions. Add a provider-local helper only when the shared module cannot express the provider contract.
+- `jsonutil.go` and `legacy_hook_entries.go` serve the Kiro CLI, Letta, and OpenCode adapters, which write settings without the managed transaction; moving them onto the managed model is a product decision.
+- Recognizing pre-2.1 Elydora commands stays in place so `elydora install` replaces older entries during upgrades.
+
 ## Code Quality
 
 - Preserve the minimum Go version declared in `go.mod`.
@@ -65,7 +74,7 @@ This repository owns the public Go SDK, the `cmd/elydora` CLI, local signing beh
 
 Run the focused adapter test during development, then execute all release gates before commit:
 
-```powershell
+```sh
 go test ./cmd/elydora/plugins -run <Provider> -count=1
 go test ./...
 go test -race ./...
@@ -74,6 +83,8 @@ go build ./cmd/elydora
 govulncheck ./...
 git diff --check
 ```
+
+The Linux test environment leaks provider config into `$HOME`; run the suite with `HOME` and `XDG_CONFIG_HOME` pointed at a scratch directory while `GOPATH`, `GOMODCACHE`, and `GOCACHE` keep their real values.
 
 Provider adapter tests must cover installation, idempotency, official event forwarding, blocking behavior, status, missing runtime files, uninstall ownership, and malformed configuration preservation.
 
