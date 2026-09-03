@@ -46,14 +46,6 @@ type grokRenderedDocument struct {
 	remove   bool
 }
 
-func cloneGrokObject(value map[string]any) map[string]any {
-	clone := make(map[string]any, len(value))
-	for key, item := range value {
-		clone[key] = item
-	}
-	return clone
-}
-
 func cloneGrokHooks(source grokHooks) grokHooks {
 	clone := make(grokHooks, len(source))
 	for event, groups := range source {
@@ -120,7 +112,7 @@ func validateGrokHandler(
 			}
 		}
 	}
-	return cloneGrokObject(handler), nil
+	return cloneJSONObject(handler), nil
 }
 
 func validateGrokGroup(value any, event string, groupIndex int) (grokGroup, error) {
@@ -158,7 +150,7 @@ func validateGrokGroup(value any, event string, groupIndex int) (grokGroup, erro
 		}
 		handlers = append(handlers, handler)
 	}
-	return grokGroup{object: cloneGrokObject(object), handlers: handlers}, nil
+	return grokGroup{object: cloneJSONObject(object), handlers: handlers}, nil
 }
 
 func readGrokHooks(root map[string]any) (grokHooks, error) {
@@ -221,7 +213,7 @@ func renderGrokHooks(hooks grokHooks) map[string]any {
 	for event, groups := range hooks {
 		values := make([]any, 0, len(groups))
 		for _, group := range groups {
-			object := cloneGrokObject(group.object)
+			object := cloneJSONObject(group.object)
 			handlers := make([]any, 0, len(group.handlers))
 			for _, handler := range group.handlers {
 				handlers = append(handlers, handler)
@@ -378,7 +370,7 @@ func renderGrokDocument(
 			document: document, changed: true, remove: true,
 		}, nil
 	}
-	root := cloneGrokObject(document.root)
+	root := cloneJSONObject(document.root)
 	if len(hooks) == 0 {
 		delete(root, "hooks")
 	} else {

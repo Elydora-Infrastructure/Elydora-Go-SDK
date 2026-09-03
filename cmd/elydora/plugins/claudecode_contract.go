@@ -79,14 +79,6 @@ type claudeRenderedDocument struct {
 
 type claudeRuntimeContract = managedRuntimeContract
 
-func cloneClaudeObject(value map[string]any) map[string]any {
-	clone := make(map[string]any, len(value))
-	for key, item := range value {
-		clone[key] = item
-	}
-	return clone
-}
-
 func cloneClaudeHooks(source claudeHooks) claudeHooks {
 	clone := make(claudeHooks, len(source))
 	for event, groups := range source {
@@ -295,7 +287,7 @@ func validateClaudeHandler(
 			}
 		}
 	}
-	return cloneClaudeObject(handler), nil
+	return cloneJSONObject(handler), nil
 }
 
 func validateClaudeGroup(value any, event string, groupIndex int) (claudeGroup, error) {
@@ -328,7 +320,7 @@ func validateClaudeGroup(value any, event string, groupIndex int) (claudeGroup, 
 		}
 		handlers = append(handlers, handler)
 	}
-	return claudeGroup{object: cloneClaudeObject(object), handlers: handlers}, nil
+	return claudeGroup{object: cloneJSONObject(object), handlers: handlers}, nil
 }
 
 func readClaudeHooks(root map[string]any) (claudeHooks, error) {
@@ -407,7 +399,7 @@ func renderClaudeHooks(hooks claudeHooks) map[string]any {
 	for event, groups := range hooks {
 		values := make([]any, 0, len(groups))
 		for _, group := range groups {
-			object := cloneClaudeObject(group.object)
+			object := cloneJSONObject(group.object)
 			handlers := make([]any, 0, len(group.handlers))
 			for _, handler := range group.handlers {
 				handlers = append(handlers, handler)
@@ -435,7 +427,7 @@ func renderClaudeDocument(
 			document: document, changed: true, remove: true,
 		}, nil
 	}
-	root := cloneClaudeObject(document.root)
+	root := cloneJSONObject(document.root)
 	if len(hooks) == 0 {
 		delete(root, "hooks")
 	} else {

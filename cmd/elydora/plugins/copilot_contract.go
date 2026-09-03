@@ -74,14 +74,6 @@ func copilotManagedEntryForHandler(
 	return resolveManagedScript(scriptPath, scriptName)
 }
 
-func cloneCopilotObject(value map[string]any) map[string]any {
-	clone := make(map[string]any, len(value))
-	for key, item := range value {
-		clone[key] = item
-	}
-	return clone
-}
-
 func cloneCopilotHooks(source copilotHooks) copilotHooks {
 	clone := make(copilotHooks, len(source))
 	for event, handlers := range source {
@@ -240,7 +232,7 @@ func renderCopilotDocument(
 			document: document, changed: true, remove: true,
 		}, nil
 	}
-	root := cloneCopilotObject(document.root)
+	root := cloneJSONObject(document.root)
 	root["version"] = float64(1)
 	if len(hooks) == 0 {
 		delete(root, "hooks")

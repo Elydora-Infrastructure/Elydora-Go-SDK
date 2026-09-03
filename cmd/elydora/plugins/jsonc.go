@@ -293,3 +293,11 @@ func jsonPointer(path []any) string {
 	}
 	return pointer.String()
 }
+
+func cloneJSONObject(value map[string]any) map[string]any {
+	clone := make(map[string]any, len(value))
+	for key, item := range value {
+		clone[key] = item
+	}
+	return clone
+}

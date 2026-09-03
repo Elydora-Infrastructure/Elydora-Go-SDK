@@ -39,14 +39,6 @@ type codexRenderedDocument struct {
 
 type codexRuntimeContract = managedRuntimeContract
 
-func cloneCodexObject(value map[string]any) map[string]any {
-	clone := make(map[string]any, len(value))
-	for key, item := range value {
-		clone[key] = item
-	}
-	return clone
-}
-
 func cloneCodexHooks(source codexHooks) codexHooks {
 	clone := make(codexHooks, len(source))
 	for event, groups := range source {
@@ -147,7 +139,7 @@ func removeCodexGroups(
 			kept = append(kept, handler)
 		}
 		if len(kept) > 0 || !exactCodexMatcherGroup(group) {
-			next := cloneCodexObject(group)
+			next := cloneJSONObject(group)
 			next["hooks"] = kept
 			result = append(result, next)
 		}
@@ -223,7 +215,7 @@ func renderCodexDocument(
 	if len(hooks) == 0 && entirelyManagedCodexDocument(document) {
 		return &codexRenderedDocument{document: document, changed: true, remove: true}, nil
 	}
-	root := cloneCodexObject(document.root)
+	root := cloneJSONObject(document.root)
 	if len(hooks) == 0 {
 		delete(root, "hooks")
 	} else {

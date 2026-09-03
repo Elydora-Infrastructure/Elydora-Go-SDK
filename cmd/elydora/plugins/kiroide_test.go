@@ -164,7 +164,7 @@ func TestKiroIdeStatusRequiresUniqueExactPairAndRuntimeIntegrity(t *testing.T) {
 	document = readKiroIdeObject(t, fixture.configPath)
 	document["hooks"] = append(
 		requireArray(t, document["hooks"]),
-		cloneKiroIdeObject(findKiroIdeHook(t, document, kiroIdeGuardName)),
+		cloneJSONObject(findKiroIdeHook(t, document, kiroIdeGuardName)),
 	)
 	writeKiroIdeJSON(t, fixture.configPath, document)
 	assertStatus(false, false)
@@ -283,7 +283,7 @@ func TestKiroIdeStatusRejectsExtraOrphanAndStaleRuntimeCommands(t *testing.T) {
 					name = "node.exe"
 				}
 				staleNode := filepath.Join(fixture.homeDir, "old-node", name)
-				command, err := buildKiroIdeCommand(staleNode, fixture.guardPath)
+				command, err := buildEncodedCommand("Kiro IDE", staleNode, fixture.guardPath)
 				if err != nil {
 					t.Fatalf("build stale Kiro IDE command: %v", err)
 				}

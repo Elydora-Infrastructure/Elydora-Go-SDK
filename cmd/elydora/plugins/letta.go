@@ -1,7 +1,6 @@
 package plugins
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -99,14 +98,8 @@ func (p *LettaPlugin) Uninstall(agentID string) error {
 		return err
 	}
 	if agentID != "" {
-		for _, resolve := range []func(string) (string, error){hookScriptPath, guardScriptPath} {
-			path, err := resolve(agentID)
-			if err != nil {
-				return err
-			}
-			if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
-				return fmt.Errorf("remove %s: %w", path, err)
-			}
+		if err := removeAgentScripts(agentID); err != nil {
+			return err
 		}
 	}
 	fmt.Println("Uninstalled Elydora hook for Letta Code.")

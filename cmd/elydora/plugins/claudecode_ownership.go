@@ -99,7 +99,7 @@ func removeManagedClaudeGroups(
 			kept = append(kept, handler)
 		}
 		if len(kept) > 0 || !exactManagedClaudeGroup(group) {
-			object := cloneClaudeObject(group.object)
+			object := cloneJSONObject(group.object)
 			object["hooks"] = group.object["hooks"]
 			result = append(result, claudeGroup{object: object, handlers: kept})
 		}

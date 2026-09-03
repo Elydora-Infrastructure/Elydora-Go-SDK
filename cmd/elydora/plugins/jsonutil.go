@@ -2,6 +2,7 @@ package plugins
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -47,6 +48,20 @@ func hookScriptPath(agentId string) (string, error) {
 		return "", err
 	}
 	return filepath.Join(agentDirectory, "hook.js"), nil
+}
+
+// removeAgentScripts deletes hook.js and guard.js; missing files are fine.
+func removeAgentScripts(agentID string) error {
+	for _, resolve := range []func(string) (string, error){hookScriptPath, guardScriptPath} {
+		path, err := resolve(agentID)
+		if err != nil {
+			return err
+		}
+		if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("remove %s: %w", path, err)
+		}
+	}
+	return nil
 }
 
 // guardScriptPath returns ~/.elydora/<agentId>/guard.js.

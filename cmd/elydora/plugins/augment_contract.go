@@ -67,14 +67,6 @@ type augmentRuntimeContract struct {
 	auditWrapper string
 }
 
-func cloneAugmentObject(value map[string]any) map[string]any {
-	clone := make(map[string]any, len(value))
-	for key, item := range value {
-		clone[key] = item
-	}
-	return clone
-}
-
 func validateAugmentHandler(
 	value any,
 	event string,
@@ -113,7 +105,7 @@ func validateAugmentHandler(
 			return nil, fmt.Errorf("%s timeout must be a positive finite number", label)
 		}
 	}
-	return cloneAugmentObject(handler), nil
+	return cloneJSONObject(handler), nil
 }
 
 func validateAugmentMetadata(value any, label string) error {
@@ -168,7 +160,7 @@ func validateAugmentGroup(value any, event string, groupIndex int) (augmentGroup
 		}
 		handlers = append(handlers, handler)
 	}
-	return augmentGroup{object: cloneAugmentObject(object), handlers: handlers}, nil
+	return augmentGroup{object: cloneJSONObject(object), handlers: handlers}, nil
 }
 
 func readAugmentHooks(root map[string]any) (augmentHooks, error) {
@@ -247,7 +239,7 @@ func renderAugmentDocument(
 	if !document.exists && len(hooks) == 0 {
 		return &augmentRenderedDocument{document: document}, nil
 	}
-	root := cloneAugmentObject(document.root)
+	root := cloneJSONObject(document.root)
 	if len(hooks) == 0 {
 		delete(root, "hooks")
 	} else {
@@ -280,7 +272,7 @@ func renderAugmentHooks(hooks augmentHooks) map[string]any {
 	for event, groups := range hooks {
 		values := make([]any, 0, len(groups))
 		for _, group := range groups {
-			object := cloneAugmentObject(group.object)
+			object := cloneJSONObject(group.object)
 			handlers := make([]any, 0, len(group.handlers))
 			for _, handler := range group.handlers {
 				handlers = append(handlers, handler)
