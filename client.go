@@ -151,7 +151,16 @@ func retryable(status int) bool {
 	return status >= 500 || status == http.StatusTooManyRequests
 }
 
-// doRequest executes an authenticated request, retrying transport and 5xx failures.
+// A lost response to a non-idempotent request must not be replayed.
+func idempotent(method string) bool {
+	switch method {
+	case http.MethodGet, http.MethodHead, http.MethodOptions, http.MethodPut, http.MethodDelete:
+		return true
+	}
+	return false
+}
+
+// doRequest executes an authenticated request; only idempotent methods retry.
 func (c *Client) doRequest(method, path string, body interface{}, result interface{}) error {
 	data, err := marshalBody(body)
 	if err != nil {
@@ -169,18 +178,24 @@ func (c *Client) doRequest(method, path string, body interface{}, result interfa
 		resp, err := c.httpClient.Do(req)
 		if err != nil {
 			lastErr = fmt.Errorf("elydora: http request: %w", err)
+			if !idempotent(method) {
+				return lastErr
+			}
 			continue
 		}
 		respBody, err := readBody(resp, maxResponseBytes)
 		if err != nil {
 			lastErr = err
+			if !idempotent(method) {
+				return lastErr
+			}
 			continue
 		}
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 			return decodeSuccess(respBody, result)
 		}
 		lastErr = apiError(resp.StatusCode, respBody)
-		if !retryable(resp.StatusCode) {
+		if !retryable(resp.StatusCode) || !idempotent(method) {
 			return lastErr
 		}
 	}
